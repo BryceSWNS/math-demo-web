@@ -6,15 +6,16 @@ import { ProblemDetail } from "@/components/problem-detail";
 import { getProblemById, listProblemAssets } from "@/lib/repositories/problems";
 
 type Props = {
-  params: { id: string };
-  searchParams: { page?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
 };
 
 export default async function ProblemDetailPage({ params, searchParams }: Props) {
-  const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
+  const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const page = Math.max(1, Number(resolvedSearchParams.page ?? "1") || 1);
   const [problem, assets] = await Promise.all([
-    getProblemById(params.id),
-    listProblemAssets(params.id)
+    getProblemById(id),
+    listProblemAssets(id)
   ]);
   if (!problem) notFound();
 

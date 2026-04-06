@@ -31,6 +31,10 @@
    ```bash
    npm run dev
    ```
+   如果你在 WSL/代理环境中遇到 `TypeError: fetch failed`，请改为：
+   ```bash
+   NODE_USE_ENV_PROXY=1 npm run dev
+   ```
 
 ## 环境变量
 - `NEXT_PUBLIC_SUPABASE_URL`
