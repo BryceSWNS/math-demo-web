@@ -1,6 +1,6 @@
 ---
-name: math-web-demo-architecture
-overview: 构建一个无登录的数学题目网页 Demo：老师可上传题目，学生可浏览并进入题目评论区，多级评论可发布；基于 Next.js + Supabase，并为后续登录与角色体系预留扩展点。
+name: math-web-architecture
+overview: 构建一个无登录的题库网页：学生与老师界面均下辖“概率论与数理统计”“微观经济学”栏目；老师可上传题目，学生可浏览并进入题目评论区，多级评论可发布；基于 Next.js + Supabase，并为后续登录与角色体系预留扩展点。
 todos:
   - id: bootstrap-next-supabase
     content: 初始化 Next.js + Supabase 工程，并创建 docs/DEV_LOG.md 模板
@@ -23,11 +23,13 @@ todos:
 isProject: false
 ---
 
-# 数学题目网页 Demo 架构方案
+# 乐湖华研题库架构方案
 
 ## 目标与边界
 
-- 先做 **可演示 Demo**：不做登录鉴权，但保留可扩展到登录/角色的代码结构。
+- 先做 **可演示版本**：不做登录鉴权，但保留可扩展到登录/角色的代码结构。
+- 首页作为题库门户，仅保留系统说明；学生/老师入口在右上角导航。
+- 学生界面与老师界面均采用栏目分层：`概率论与数理统计`、`微观经济学`。
 - 支持题目字段：标题、题干（Markdown/LaTeX）、选项/答案、解析、附件（图片/PDF）、标签/难度。
 - 学生点击题目进入详情页，查看并发布评论。
 - 评论采用 **多级楼中楼**。
@@ -43,17 +45,17 @@ isProject: false
 
 ## 推荐目录结构
 
-- `[/home/tou/math-demo-web/app]( /home/tou/math-demo-web/app )`：页面路由（题目列表、题目详情、发布页）
-- `[/home/tou/math-demo-web/components]( /home/tou/math-demo-web/components )`：题目渲染、评论树、上传组件
-- `[/home/tou/math-demo-web/lib/supabase]( /home/tou/math-demo-web/lib/supabase )`：Supabase 客户端与数据访问层
-- `[/home/tou/math-demo-web/lib/domain]( /home/tou/math-demo-web/lib/domain )`：领域类型与未来 auth/role 抽象接口
-- `[/home/tou/math-demo-web/supabase/migrations]( /home/tou/math-demo-web/supabase/migrations )`：表结构与索引
-- `[/home/tou/math-demo-web/docs/DEV_LOG.md]( /home/tou/math-demo-web/docs/DEV_LOG.md )`：逐步开发记录（你要求的维护文档）
+- `src/app`：页面路由（题目列表、题目详情、发布页）
+- `src/components`：题目渲染、评论树、上传组件
+- `src/lib/supabase`：Supabase 客户端与数据访问层
+- `src/lib/domain`：领域类型与未来 auth/role 抽象接口
+- `supabase/migrations`：表结构与索引
+- `docs/DEV_LOG.md`：逐步开发记录（你要求的维护文档）
 
 ## 核心数据模型（首版）
 
 - `problems`
-  - `id`, `title`, `stem_md`, `options_json`, `answer_md`, `analysis_md`, `tags[]`, `difficulty`, `status`, `is_hidden`, `created_by_alias`, `created_at`
+  - `id`, `subject(probability-statistics|microeconomics)`, `title`, `stem_md`, `options_json`, `answer_md`, `analysis_md`, `tags[]`, `difficulty`, `status`, `is_hidden`, `created_by_alias`, `created_at`
 - `problem_assets`
   - `id`, `problem_id`, `file_url`, `file_type(image|pdf)`, `sort_order`
 - `comments`
@@ -68,8 +70,25 @@ isProject: false
 - 题目列表页：展示题目卡片（标题、标签、难度、摘要）
 - 题目详情页：渲染题干/选项/答案/解析 + 附件预览 + 评论区入口
 - 评论区：支持任意层回复（UI 采用缩进树 + 折叠）
-- 题目发布页（老师视角 Demo）：填写字段并上传图片/PDF
+- 题目发布页（老师视角）：填写字段并上传图片/PDF
+- 题目编辑页（老师视角）：可修改历史题目核心字段，并追加上传附件
 - 管理入口（临时 admin token）：隐藏/恢复题目或评论
+
+### 门户栏目 + 老师/学生界面（无登录阶段）
+
+- 入口页 `/`：作为题库门户，仅提供说明信息
+- 老师/学生路由入口仅保留在右上角导航区域（`/teacher`、`/student`）
+- 学生界面 `/student`：
+  - 先选择栏目：`/student/probability-statistics`、`/student/microeconomics`
+  - 进入栏目后再展示该栏目题目列表，详情页使用 `viewer=student`
+- 老师界面 `/teacher`：
+  - 首次进入需口令登录 `/teacher/login`（校验 `ADMIN_TOKEN`）
+  - 先选择栏目：`/teacher/probability-statistics`、`/teacher/microeconomics`
+  - 进入栏目后展示该栏目题目列表，并可发布该栏目的新题
+  - 可编辑题目 `/teacher/problems/[id]/edit`
+  - 详情页使用 `viewer=teacher`，显示编辑入口与治理表单
+
+说明：当前仍为无登录阶段，老师访问控制采用 `ADMIN_TOKEN + httpOnly Cookie` 的轻量方案；后续接入 Auth 后应将权限校验下沉为标准会话与 RLS。
 
 ## 架构图（可扩展到登录）
 
@@ -101,8 +120,10 @@ flowchart LR
 4. 实现多级评论发布与树形展示（分页按题目分片）。
 5. 实现管理员隐藏能力（题目/评论）。
 6. 补充扩展点：auth 接口占位、角色映射、关键测试与 README。
+7. 拆分老师/学生界面，并补齐老师题目编辑流程。
+8. 增加老师口令登录与老师页服务端鉴权。
 
-## 验收标准（Demo）
+## 验收标准
 
 - 可创建题目并上传附件；列表可见，详情渲染正确。
 - 题目下可发表多级评论并实时/准实时展示。

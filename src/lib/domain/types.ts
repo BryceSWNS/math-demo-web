@@ -1,6 +1,7 @@
 export type AuthorRole = "teacher" | "student";
 
 export type ProblemDifficulty = "easy" | "medium" | "hard";
+export type ProblemSubject = "probability-statistics" | "microeconomics";
 
 export type ProblemOption = {
   key: string;
@@ -9,6 +10,7 @@ export type ProblemOption = {
 
 export type ProblemRecord = {
   id: string;
+  subject: ProblemSubject;
   title: string;
   stemMd: string;
   options: ProblemOption[];

@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-import type { ProblemDifficulty, ProblemOption, ProblemRecord } from "@/lib/domain/types";
+import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject } from "@/lib/domain/types";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const createProblemInputSchema = z.object({
+  subject: z.enum(["probability-statistics", "microeconomics"]).default("probability-statistics"),
   title: z.string().min(3).max(120),
   stemMd: z.string().min(1),
   options: z.array(z.object({ key: z.string().min(1), text: z.string().min(1) })).default([]),
@@ -14,8 +15,11 @@ const createProblemInputSchema = z.object({
   createdByAlias: z.string().min(2).max(24)
 });
 
+const updateProblemInputSchema = createProblemInputSchema.omit({ createdByAlias: true });
+
 type DbProblemRow = {
   id: string;
+  subject: ProblemSubject | null;
   title: string;
   stem_md: string;
   options_json: unknown;
@@ -29,6 +33,7 @@ type DbProblemRow = {
 };
 
 export type CreateProblemInput = z.infer<typeof createProblemInputSchema>;
+export type UpdateProblemInput = z.infer<typeof updateProblemInputSchema>;
 
 export async function listVisibleProblems() {
   const supabase = createSupabaseServerClient();
@@ -38,6 +43,18 @@ export async function listVisibleProblems() {
     .eq("is_hidden", false)
     .order("created_at", { ascending: false });
   if (error) throw new Error(`加载题目失败: ${error.message}`);
+  return (data ?? []).map(mapProblemRow);
+}
+
+export async function listVisibleProblemsBySubject(subject: ProblemSubject) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("problems")
+    .select("*")
+    .eq("is_hidden", false)
+    .eq("subject", subject)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`按栏目加载题目失败: ${error.message}`);
   return (data ?? []).map(mapProblemRow);
 }
 
@@ -55,6 +72,7 @@ export async function createProblem(input: CreateProblemInput): Promise<string> 
   const { data, error } = await supabase
     .from("problems")
     .insert({
+      subject: payload.subject,
       title: payload.title,
       stem_md: payload.stemMd,
       options_json: payload.options,
@@ -68,6 +86,25 @@ export async function createProblem(input: CreateProblemInput): Promise<string> 
     .single();
   if (error) throw new Error(`创建题目失败: ${error.message}`);
   return data.id;
+}
+
+export async function updateProblem(problemId: string, input: UpdateProblemInput): Promise<void> {
+  const payload = updateProblemInputSchema.parse(input);
+  const supabase = createSupabaseServiceClient();
+  const { error } = await supabase
+    .from("problems")
+    .update({
+      subject: payload.subject,
+      title: payload.title,
+      stem_md: payload.stemMd,
+      options_json: payload.options,
+      answer_md: payload.answerMd,
+      analysis_md: payload.analysisMd,
+      tags: payload.tags,
+      difficulty: payload.difficulty
+    })
+    .eq("id", problemId);
+  if (error) throw new Error(`更新题目失败: ${error.message}`);
 }
 
 export async function addProblemAssets(
@@ -107,6 +144,7 @@ export async function hideProblem(problemId: string) {
 function mapProblemRow(row: DbProblemRow): ProblemRecord {
   return {
     id: row.id,
+    subject: row.subject ?? "probability-statistics",
     title: row.title,
     stemMd: row.stem_md,
     options: normalizeOptions(row.options_json),

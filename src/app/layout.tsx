@@ -4,8 +4,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "数学题目 Demo",
-  description: "老师上传题目，学生浏览并评论的演示系统"
+  title: "乐湖华研题库",
+  description: "面向多学科题库的演示系统，支持老师发布与学生浏览评论"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -15,11 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="topbar">
           <div className="container topbar-inner">
             <Link href="/" className="brand">
-              数学题目 Demo
+              乐湖华研题库
             </Link>
             <nav>
-              <Link href="/">题目列表</Link>
-              <Link href="/problems/new">发布题目</Link>
+              <Link href="/student">学生界面</Link>
+              <Link href="/teacher">老师界面</Link>
             </nav>
           </div>
         </header>

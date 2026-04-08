@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { parseIdentity } from "@/lib/domain/identity";
+import { isSubject } from "@/lib/domain/subjects";
+import { TEACHER_AUTH_COOKIE, buildTeacherLoginPath, isTeacherAuthenticated, sanitizeNextPath } from "@/lib/domain/teacher-auth";
 import { createComment, hideComment } from "@/lib/repositories/comments";
 import { createModerationEvent } from "@/lib/repositories/moderation";
-import { addProblemAssets, createProblem, hideProblem } from "@/lib/repositories/problems";
+import { addProblemAssets, createProblem, hideProblem, updateProblem } from "@/lib/repositories/problems";
 import { inferAssetType, uploadProblemAttachment } from "@/lib/repositories/storage";
 import { getServerSupabaseEnv } from "@/lib/supabase/env";
 
@@ -38,7 +41,48 @@ function parseTags(raw: string) {
     .filter(Boolean);
 }
 
+function parseSubject(raw: string) {
+  const normalized = raw.trim();
+  if (!isSubject(normalized)) {
+    throw new Error("题目栏目无效");
+  }
+  return normalized;
+}
+
+async function ensureTeacherAuth(nextPath: string) {
+  if (!(await isTeacherAuthenticated())) {
+    redirect(buildTeacherLoginPath(nextPath) as never);
+  }
+}
+
+export async function teacherLoginAction(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const nextPath = sanitizeNextPath(String(formData.get("next") ?? "/teacher"));
+  const env = getServerSupabaseEnv();
+
+  if (password !== env.ADMIN_TOKEN) {
+    redirect(`/teacher/login?error=1&next=${encodeURIComponent(nextPath)}` as never);
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(TEACHER_AUTH_COOKIE, env.ADMIN_TOKEN, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 8
+  });
+  redirect(nextPath as never);
+}
+
+export async function teacherLogoutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(TEACHER_AUTH_COOKIE);
+  redirect("/");
+}
+
 export async function createProblemAction(formData: FormData) {
+  await ensureTeacherAuth("/teacher/problems/new");
   const identity = parseIdentity(formData);
   const title = String(formData.get("title") ?? "").trim();
   const stemMd = String(formData.get("stemMd") ?? "").trim();
@@ -47,8 +91,10 @@ export async function createProblemAction(formData: FormData) {
   const analysisMd = String(formData.get("analysisMd") ?? "");
   const tagsRaw = String(formData.get("tagsRaw") ?? "");
   const difficulty = String(formData.get("difficulty") ?? "medium");
+  const subject = parseSubject(String(formData.get("subject") ?? "probability-statistics"));
 
   const problemId = await createProblem({
+    subject,
     title,
     stemMd,
     options: parseOptions(optionsRaw),
@@ -72,8 +118,67 @@ export async function createProblemAction(formData: FormData) {
   }
   await addProblemAssets(problemId, assets);
   revalidatePath("/");
+  revalidatePath("/teacher");
+  revalidatePath("/student");
+  revalidatePath(`/teacher/${subject}`);
+  revalidatePath(`/student/${subject}`);
+  revalidatePath("/teacher/probability-statistics");
+  revalidatePath("/teacher/microeconomics");
+  revalidatePath("/student/probability-statistics");
+  revalidatePath("/student/microeconomics");
   revalidatePath(`/problems/${problemId}`);
-  redirect(`/problems/${problemId}`);
+  redirect(`/problems/${problemId}?viewer=teacher`);
+}
+
+export async function updateProblemAction(formData: FormData) {
+  const problemId = String(formData.get("problemId") ?? "").trim();
+  if (!problemId) throw new Error("题目 ID 缺失");
+  await ensureTeacherAuth(`/teacher/problems/${problemId}/edit`);
+
+  const title = String(formData.get("title") ?? "").trim();
+  const stemMd = String(formData.get("stemMd") ?? "").trim();
+  const optionsRaw = String(formData.get("optionsRaw") ?? "");
+  const answerMd = String(formData.get("answerMd") ?? "");
+  const analysisMd = String(formData.get("analysisMd") ?? "");
+  const tagsRaw = String(formData.get("tagsRaw") ?? "");
+  const difficulty = String(formData.get("difficulty") ?? "medium");
+  const subject = parseSubject(String(formData.get("subject") ?? "probability-statistics"));
+
+  await updateProblem(problemId, {
+    subject,
+    title,
+    stemMd,
+    options: parseOptions(optionsRaw),
+    answerMd,
+    analysisMd,
+    tags: parseTags(tagsRaw),
+    difficulty: difficulty as "easy" | "medium" | "hard"
+  });
+
+  const files = formData.getAll("attachments").filter((x): x is File => x instanceof File && x.size > 0);
+  const assets: Array<{ fileUrl: string; fileType: "image" | "pdf"; sortOrder: number }> = [];
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i];
+    const url = await uploadProblemAttachment(problemId, file);
+    assets.push({
+      fileUrl: url,
+      fileType: inferAssetType(file),
+      sortOrder: i
+    });
+  }
+  await addProblemAssets(problemId, assets);
+
+  revalidatePath("/");
+  revalidatePath("/teacher");
+  revalidatePath("/student");
+  revalidatePath(`/teacher/${subject}`);
+  revalidatePath(`/student/${subject}`);
+  revalidatePath("/teacher/probability-statistics");
+  revalidatePath("/teacher/microeconomics");
+  revalidatePath("/student/probability-statistics");
+  revalidatePath("/student/microeconomics");
+  revalidatePath(`/problems/${problemId}`);
+  redirect(`/problems/${problemId}?viewer=teacher`);
 }
 
 export async function createCommentAction(formData: FormData) {
@@ -96,6 +201,7 @@ export async function hideProblemAction(formData: FormData) {
   const adminToken = String(formData.get("adminToken") ?? "");
   const operatorAlias = String(formData.get("operatorAlias") ?? "admin");
   const problemId = String(formData.get("problemId") ?? "");
+  await ensureTeacherAuth(`/problems/${problemId}?viewer=teacher`);
   ensureAdminToken(adminToken);
   await hideProblem(problemId);
   await createModerationEvent({
@@ -105,6 +211,8 @@ export async function hideProblemAction(formData: FormData) {
     operatorAlias
   });
   revalidatePath("/");
+  revalidatePath("/teacher");
+  revalidatePath("/student");
   redirect("/");
 }
 
@@ -114,6 +222,7 @@ export async function hideCommentAction(formData: FormData) {
   const commentId = String(formData.get("commentId") ?? "");
   const problemId = String(formData.get("problemId") ?? "");
   const hiddenReason = String(formData.get("hiddenReason") ?? "违规内容");
+  await ensureTeacherAuth(`/problems/${problemId}?viewer=teacher`);
   ensureAdminToken(adminToken);
   await hideComment(commentId, hiddenReason);
   await createModerationEvent({
