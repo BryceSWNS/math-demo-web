@@ -1,132 +1,119 @@
 ---
-name: math-web-architecture
-overview: 构建一个无登录的题库网页：学生与老师界面均下辖“概率论与数理统计”“微观经济学”栏目；老师可上传题目，学生可浏览并进入题目评论区，多级评论可发布；基于 Next.js + Supabase，并为后续登录与角色体系预留扩展点。
-todos:
-  - id: bootstrap-next-supabase
-    content: 初始化 Next.js + Supabase 工程，并创建 docs/DEV_LOG.md 模板
-    status: completed
-  - id: design-db-schema
-    content: 实现 problems/problem_assets/comments/moderation_events 迁移与索引
-    status: completed
-  - id: build-problem-flow
-    content: 完成题目发布、列表、详情（Markdown/LaTeX/附件）
-    status: completed
-  - id: build-threaded-comments
-    content: 实现多级评论写入与树形渲染（含分页/按需加载）
-    status: completed
-  - id: add-admin-hide
-    content: 实现管理员隐藏能力与前台过滤逻辑
-    status: completed
-  - id: add-extension-points
-    content: 补充登录与角色扩展接口、文档和基础测试
-    status: completed
+name: math-web-architecture-v2
+overview: 乐湖华研题库 v2.0 当前实现架构基线（以代码为准）：学生按栏目浏览题目并参与评论，老师经口令登录后可按栏目发布/编辑题目并执行治理操作，后端基于 Next.js Server Actions + Supabase（Postgres + Storage）。
 isProject: false
 ---
 
-# 乐湖华研题库架构方案
+# 乐湖华研题库架构文档（Version 2.0）
 
-## 目标与边界
+## 1. 当前阶段定位
 
-- 先做 **可演示版本**：不做登录鉴权，但保留可扩展到登录/角色的代码结构。
-- 首页作为题库门户，仅保留系统说明；学生/老师入口在右上角导航。
-- 学生界面与老师界面均采用栏目分层：`概率论与数理统计`、`微观经济学`。
-- 支持题目字段：标题、题干（Markdown/LaTeX）、选项/答案、解析、附件（图片/PDF）、标签/难度。
-- 学生点击题目进入详情页，查看并发布评论。
-- 评论采用 **多级楼中楼**。
-- 预留基础治理：管理员可隐藏内容（题目/评论）。
-- 维护开发过程文档：逐步记录设计与实现决策。
+- 本项目仍处于“轻认证演示版”：学生端无登录，老师端采用 `ADMIN_TOKEN + httpOnly Cookie`。
+- 路由采用“角色 -> 栏目 -> 题目”的层级组织，栏目固定为：
+  - `probability-statistics`（概率论与数理统计）
+  - `microeconomics`（微观经济学）
+- 题目支持 Markdown + LaTeX、选项、答案、解析、标签、难度、图片/PDF 附件。
+- 评论支持楼中楼（邻接表），顶层分页、子回复按需加载。
+- 治理能力支持隐藏题目与隐藏评论，并写入治理审计日志。
 
-## 技术选型
+## 2. 技术栈与分层
 
-- 前端与 BFF：Next.js（App Router）
-- 数据与存储：Supabase（Postgres + Storage + RLS 预留）
-- 渲染：Markdown + LaTeX（KaTeX）
-- 评论树：邻接表模型（`parent_id` 自引用）+ 递归查询/分层拉取
+- 前端/服务端一体：Next.js App Router（React 19）
+- 数据与文件：Supabase Postgres + Supabase Storage
+- 内容渲染：`react-markdown` + `remark-math` + `rehype-katex`
+- 输入校验：`zod`
+- 代码分层：
+  - `src/app`：页面、API Route、Server Actions（编排层）
+  - `src/components`：展示与交互组件
+  - `src/lib/repositories`：数据访问（与 Supabase 交互）
+  - `src/lib/domain`：领域类型、栏目定义、身份与老师鉴权能力
+  - `src/lib/supabase`：环境变量与客户端工厂
 
-## 推荐目录结构
+## 3. 运行架构（请求流）
 
-- `src/app`：页面路由（题目列表、题目详情、发布页）
-- `src/components`：题目渲染、评论树、上传组件
-- `src/lib/supabase`：Supabase 客户端与数据访问层
-- `src/lib/domain`：领域类型与未来 auth/role 抽象接口
-- `supabase/migrations`：表结构与索引
-- `docs/DEV_LOG.md`：逐步开发记录（你要求的维护文档）
+1. 浏览器访问 Next.js 页面或提交表单。
+2. Server Action / Route Handler 执行业务编排与权限校验。
+3. Repository 调用 Supabase：
+   - 读操作：`anon key`（`createSupabaseServerClient`）
+   - 写操作：`service role key`（`createSupabaseServiceClient`）
+4. 数据写入 Postgres，附件上传至 Storage bucket `problem-assets`。
+5. 通过 `revalidatePath` 触发页面数据刷新，再 `redirect` 到目标页面。
 
-## 核心数据模型（首版）
+## 4. 路由与权限模型
 
-- `problems`
-  - `id`, `subject(probability-statistics|microeconomics)`, `title`, `stem_md`, `options_json`, `answer_md`, `analysis_md`, `tags[]`, `difficulty`, `status`, `is_hidden`, `created_by_alias`, `created_at`
-- `problem_assets`
-  - `id`, `problem_id`, `file_url`, `file_type(image|pdf)`, `sort_order`
-- `comments`
-  - `id`, `problem_id`, `parent_id`, `author_role(teacher|student)`, `author_alias`, `content_md`, `is_hidden`, `hidden_reason`, `created_at`
-- `moderation_events`
-  - `id`, `target_type(problem|comment)`, `target_id`, `action(hide|unhide)`, `operator_alias`, `created_at`
+### 4.1 学生侧
 
-说明：即使无登录，也先保留 `author_role` 和 `operator_alias` 字段；后续接入登录时可平滑替换为 `author_user_id`。
+- `/`：当前实现直接重定向到 `/student`。
+- `/student`：栏目选择页。
+- `/student/[subject]`：栏目题目列表，仅展示可见题目。
+- `/problems/[id]?viewer=student`：题目详情 + 评论区（默认学生视角）。
 
-## 页面与交互流程
+### 4.2 老师侧
 
-- 题目列表页：展示题目卡片（标题、标签、难度、摘要）
-- 题目详情页：渲染题干/选项/答案/解析 + 附件预览 + 评论区入口
-- 评论区：支持任意层回复（UI 采用缩进树 + 折叠）
-- 题目发布页（老师视角）：填写字段并上传图片/PDF
-- 题目编辑页（老师视角）：可修改历史题目核心字段，并追加上传附件
-- 管理入口（临时 admin token）：隐藏/恢复题目或评论
+- `/teacher/login`：口令登录页；校验 `ADMIN_TOKEN`。
+- 登录成功写入 `teacher_auth` Cookie（8 小时、httpOnly、sameSite=lax）。
+- `/teacher`：栏目选择页（要求已登录）。
+- `/teacher/[subject]`：栏目题目管理页（要求已登录）。
+- `/teacher/problems/new`：发布题目（要求已登录）。
+- `/teacher/problems/[id]/edit`：编辑题目（要求已登录）。
+- `/problems/[id]?viewer=teacher`：老师视角详情页（要求已登录，展示编辑/治理入口）。
 
-### 门户栏目 + 老师/学生界面（无登录阶段）
+### 4.3 治理权限
 
-- 入口页 `/`：作为题库门户，仅提供说明信息
-- 老师/学生路由入口仅保留在右上角导航区域（`/teacher`、`/student`）
-- 学生界面 `/student`：
-  - 先选择栏目：`/student/probability-statistics`、`/student/microeconomics`
-  - 进入栏目后再展示该栏目题目列表，详情页使用 `viewer=student`
-- 老师界面 `/teacher`：
-  - 首次进入需口令登录 `/teacher/login`（校验 `ADMIN_TOKEN`）
-  - 先选择栏目：`/teacher/probability-statistics`、`/teacher/microeconomics`
-  - 进入栏目后展示该栏目题目列表，并可发布该栏目的新题
-  - 可编辑题目 `/teacher/problems/[id]/edit`
-  - 详情页使用 `viewer=teacher`，显示编辑入口与治理表单
+- `hideProblemAction`、`hideCommentAction` 双重门槛：
+  1) 必须是老师登录态；
+  2) 提交的 `adminToken` 必须匹配 `ADMIN_TOKEN`。
+- 治理行为写入 `moderation_events` 审计表。
 
-说明：当前仍为无登录阶段，老师访问控制采用 `ADMIN_TOKEN + httpOnly Cookie` 的轻量方案；后续接入 Auth 后应将权限校验下沉为标准会话与 RLS。
+## 5. 数据模型（已落库）
 
-## 架构图（可扩展到登录）
+### 5.1 `problems`
 
-```mermaid
-flowchart LR
-  teacherClient[TeacherBrowser] --> nextApp[NextjsApp]
-  studentClient[StudentBrowser] --> nextApp
-  nextApp --> supabaseDb[SupabasePostgres]
-  nextApp --> supabaseStorage[SupabaseStorage]
-  nextApp --> renderEngine[MarkdownLatexRenderer]
-  nextApp --> moderationSvc[ModerationService]
-  moderationSvc --> supabaseDb
-```
+- 核心字段：`subject`、`title`、`stem_md`、`options_json`、`answer_md`、`analysis_md`、`tags`、`difficulty`、`is_hidden`、`created_by_alias`、`author_user_id`、`created_at`
+- 关键索引：
+  - `idx_problems_visible_created_at`
+  - `idx_problems_subject_visible_created_at`
+  - `idx_problems_author_user_id`
 
+### 5.2 `problem_assets`
 
+- 字段：`problem_id`、`file_url`、`file_type(image|pdf)`、`sort_order`
+- 索引：`idx_problem_assets_problem_id`
 
-## 可扩展设计（为后续登录做准备）
+### 5.3 `comments`
 
-- 在 `lib/domain` 定义 `IdentityContext`：当前先由前端表单传 `role+alias`，后续可切换为 Supabase Auth session。
-- 数据访问层统一走 repository（而非页面直接调 SDK），后续替换权限逻辑时改动最小。
-- 在数据库提前保留 `author_user_id` 可空字段与相关索引。
-- 管理操作统一走 server actions / route handlers，避免未来权限散落在前端。
+- 字段：`problem_id`、`parent_id`、`author_role`、`author_alias`、`author_user_id`、`content_md`、`is_hidden`、`hidden_reason`、`created_at`
+- 索引：
+  - `idx_comments_problem_parent_created`
+  - `idx_comments_author_user_id`
 
-## 分阶段实施
+### 5.4 `moderation_events`
 
-1. 初始化 Next.js + Supabase 项目骨架，建立 `DEV_LOG.md` 记录模板。
-2. 完成数据表迁移与 Storage bucket（图片/PDF）。
-3. 实现题目发布与列表/详情渲染（Markdown+LaTeX+附件）。
-4. 实现多级评论发布与树形展示（分页按题目分片）。
-5. 实现管理员隐藏能力（题目/评论）。
-6. 补充扩展点：auth 接口占位、角色映射、关键测试与 README。
-7. 拆分老师/学生界面，并补齐老师题目编辑流程。
-8. 增加老师口令登录与老师页服务端鉴权。
+- 字段：`target_type`、`target_id`、`action`、`operator_alias`、`created_at`
+- 索引：`idx_moderation_target`
 
-## 验收标准
+## 6. 评论系统实现说明
 
-- 可创建题目并上传附件；列表可见，详情渲染正确。
-- 题目下可发表多级评论并实时/准实时展示。
-- 可执行管理员隐藏并在前台生效。
-- `DEV_LOG.md` 完整记录每一步开发与后续扩展建议。
+- 顶层评论：服务端按页查询（每页 10 条）。
+- 子回复：客户端在 `CommentNode` 内点击后调用 `/api/comments?problemId=...&parentId=...` 按需拉取。
+- 发布评论：通过 `createCommentAction`（表单提交）落库；`/api/comments` 也保留了 POST 能力用于程序化调用。
+- 当前治理入口只对顶层评论直接展示隐藏表单；子回复治理可在后续迭代补齐交互。
+
+## 7. 环境变量与安全边界
+
+- 必需变量：
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `ADMIN_TOKEN`
+- `SUPABASE_SERVICE_ROLE_KEY` 仅在服务端仓储写操作使用，不下发到客户端。
+- 老师登录属于轻量口令方案，适合演示，不等价于正式 RBAC 鉴权。
+
+## 8. 与“正式登录版本”的演进路线
+
+1. 接入 Supabase Auth（或企业 SSO），替换 `teacher_auth` Cookie 口令模式。
+2. 将 `parseIdentity` 从“表单别名输入”迁移为“会话身份注入”。
+3. 将 `author_user_id` 从可空过渡为必填，并完成历史数据回填。
+4. 把老师/治理权限下沉到 RLS + JWT Claims，减少 `service role` 写路径暴露面。
+5. 为评论治理补充对子回复的完整管理入口与审计可视化。
 

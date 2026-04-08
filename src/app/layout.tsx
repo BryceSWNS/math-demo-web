@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav>
               <Link href="/student">学生界面</Link>
-              <Link href="/teacher">老师界面</Link>
+              <Link href="/teacher/login?next=%2Fteacher">老师界面</Link>
             </nav>
           </div>
         </header>

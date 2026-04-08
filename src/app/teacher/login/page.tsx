@@ -13,7 +13,7 @@ export default async function TeacherLoginPage({ searchParams }: Props) {
     <section className="section-gap">
       <form action={teacherLoginAction} className="card form-grid">
         <h1>老师登录</h1>
-        <p className="muted">请输入管理员口令（与 `.env.local` 的 `ADMIN_TOKENM` 一致）。</p>
+        <p className="muted">请输入管理员口令（与 `.env.local` 的 `ADMIN_TOKEN` 一致）。</p>
         <input type="hidden" name="next" value={nextPath} />
         <label>
           口令
