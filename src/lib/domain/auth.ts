@@ -5,10 +5,10 @@ export interface AuthProvider {
 }
 
 /**
- * 当前 Demo 使用表单身份，因此默认返回 null。
+ * 当前使用表单身份，因此默认返回 null。
  * 接入登录后，替换为 Supabase Auth Provider 即可。
  */
-export class DemoAuthProvider implements AuthProvider {
+export class FormAuthProvider implements AuthProvider {
   async getIdentity(): Promise<IdentityContext | null> {
     return null;
   }

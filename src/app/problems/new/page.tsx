@@ -1,9 +1,5 @@
-import { ProblemForm } from "@/components/problem-form";
+import { redirect } from "next/navigation";
 
 export default function NewProblemPage() {
-  return (
-    <section className="section-gap">
-      <ProblemForm />
-    </section>
-  );
+  redirect("/teacher/problems/new");
 }

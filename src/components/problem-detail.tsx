@@ -12,6 +12,18 @@ type Props = {
   assets: Asset[];
 };
 
+function normalizeOptionMath(text: string) {
+  if (text.includes("$")) return text;
+
+  return text.replace(
+    /([a-zA-Z][a-zA-Z0-9^_]*(?:\s*[+\-*/=]\s*[a-zA-Z0-9^_]+)+)/g,
+    (raw) => {
+      const normalized = raw.replace(/\b([a-zA-Z])(\d+)\b/g, "$1_{$2}");
+      return `$${normalized}$`;
+    }
+  );
+}
+
 export function ProblemDetail({ problem, assets }: Props) {
   return (
     <article className="card section-gap">
@@ -39,7 +51,7 @@ export function ProblemDetail({ problem, assets }: Props) {
           <ul>
             {problem.options.map((opt) => (
               <li key={opt.key}>
-                <strong>{opt.key}.</strong> {opt.text}
+                <strong>{opt.key}.</strong> <MarkdownMath source={normalizeOptionMath(opt.text)} inline />
               </li>
             ))}
           </ul>

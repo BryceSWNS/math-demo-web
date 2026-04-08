@@ -8,14 +8,33 @@ import remarkMath from "remark-math";
 
 type Props = {
   source: string;
+  inline?: boolean;
 };
 
-export function MarkdownMath({ source }: Props) {
+function normalizeMathDelimiters(input: string) {
+  const unescaped = input.replace(/\\\$/g, "$");
+  return unescaped.replace(/\$\$([^\n$]+?)\$\$/g, (_, expr: string) => `$${expr.trim()}$`);
+}
+
+export function MarkdownMath({ source, inline = false }: Props) {
+  const normalizedSource = normalizeMathDelimiters(source);
+  const Wrapper = inline ? "span" : "div";
+
   return (
-    <div className="markdown">
-      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-        {source}
+    <Wrapper className={`markdown${inline ? " markdown-inline" : ""}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={
+          inline
+            ? {
+                p: ({ children }) => <span>{children}</span>
+              }
+            : undefined
+        }
+      >
+        {normalizedSource}
       </ReactMarkdown>
-    </div>
+    </Wrapper>
   );
 }

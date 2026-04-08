@@ -8,11 +8,12 @@ import { countTopLevelComments, listTopLevelComments } from "@/lib/repositories/
 type Props = {
   problemId: string;
   page: number;
+  viewer: "teacher" | "student";
 };
 
 const PAGE_SIZE = 10;
 
-export async function CommentSection({ problemId, page }: Props) {
+export async function CommentSection({ problemId, page, viewer }: Props) {
   const [items, total] = await Promise.all([
     listTopLevelComments(problemId, page, PAGE_SIZE),
     countTopLevelComments(problemId)
@@ -32,15 +33,23 @@ export async function CommentSection({ problemId, page }: Props) {
         {items.map((item) => (
           <div key={item.id} className="comment-wrapper">
             <CommentNode problemId={problemId} node={item} />
-            <AdminHideCommentForm commentId={item.id} problemId={problemId} />
+            {viewer === "teacher" ? <AdminHideCommentForm commentId={item.id} problemId={problemId} /> : null}
           </div>
         ))}
         {items.length === 0 ? <p className="muted">还没有评论，欢迎第一个留言。</p> : null}
       </div>
 
       <nav className="pager">
-        {page > 1 ? <Link href={`/problems/${problemId}?page=${page - 1}`}>上一页</Link> : <span />}
-        {page < maxPage ? <Link href={`/problems/${problemId}?page=${page + 1}`}>下一页</Link> : <span />}
+        {page > 1 ? (
+          <Link href={`/problems/${problemId}?viewer=${viewer}&page=${page - 1}`}>上一页</Link>
+        ) : (
+          <span />
+        )}
+        {page < maxPage ? (
+          <Link href={`/problems/${problemId}?viewer=${viewer}&page=${page + 1}`}>下一页</Link>
+        ) : (
+          <span />
+        )}
       </nav>
     </section>
   );
