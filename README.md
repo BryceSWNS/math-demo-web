@@ -1,4 +1,4 @@
-# 数学题目网页
+# 乐湖华研题库
 
 无登录：老师上传题目，学生浏览题目并可在评论区交流
 
@@ -48,8 +48,3 @@
 - `src/lib/domain`：领域模型与身份抽象
 - `supabase/migrations`：数据库迁移
 - `docs/DEV_LOG.md`：逐步开发记录
-
-## 后续登录扩展建议
-1. 接入 Supabase Auth 后，把 `parseIdentity` 切换为从 Session 获取身份。
-2. 将 `author_user_id` 设为必填并完成数据迁移。
-3. 以 RLS + JWT claims 做老师/学生/管理员权限控制。
