@@ -121,6 +121,12 @@ h2 {
   gap: 12px;
 }
 
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .form-grid {
   display: grid;
   gap: 12px;
@@ -216,6 +222,50 @@ hr {
   margin-top: 4px;
 }
 
+.answer-reveal-section {
+  margin: 0;
+}
+
+.answer-reveal {
+  border: 1px solid #dfe3ec;
+  border-radius: 10px;
+  background: #fafbff;
+  padding: 0 12px 2px;
+}
+
+.answer-reveal-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 10px 0;
+  user-select: none;
+}
+
+.answer-reveal-summary::-webkit-details-marker {
+  display: none;
+}
+
+.answer-reveal-summary-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.answer-reveal-summary-hint {
+  font-size: 13px;
+}
+
+.answer-reveal-body {
+  padding-bottom: 8px;
+}
+
+.answer-reveal-subheading {
+  margin-top: 4px;
+}
+
 .comment-node {
   border-left: 2px solid #dbe1ef;
   padding-left: 12px;
@@ -279,7 +329,8 @@ hr {
 }
 
 @media (max-width: 700px) {
-  .grid-2 {
+  .grid-2,
+  .grid-3 {
     grid-template-columns: 1fr;
   }
 

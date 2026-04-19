@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { parseIdentity } from "@/lib/domain/identity";
-import { isSubject } from "@/lib/domain/subjects";
+import { SUBJECTS, isSubject } from "@/lib/domain/subjects";
 import { TEACHER_AUTH_COOKIE, buildTeacherLoginPath, isTeacherAuthenticated, sanitizeNextPath } from "@/lib/domain/teacher-auth";
 import { createComment, hideComment } from "@/lib/repositories/comments";
 import { createModerationEvent } from "@/lib/repositories/moderation";
@@ -120,12 +120,10 @@ export async function createProblemAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/teacher");
   revalidatePath("/student");
-  revalidatePath(`/teacher/${subject}`);
-  revalidatePath(`/student/${subject}`);
-  revalidatePath("/teacher/probability-statistics");
-  revalidatePath("/teacher/microeconomics");
-  revalidatePath("/student/probability-statistics");
-  revalidatePath("/student/microeconomics");
+  for (const s of SUBJECTS) {
+    revalidatePath(`/teacher/${s}`);
+    revalidatePath(`/student/${s}`);
+  }
   revalidatePath(`/problems/${problemId}`);
   redirect(`/problems/${problemId}?viewer=teacher`);
 }
@@ -171,12 +169,10 @@ export async function updateProblemAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/teacher");
   revalidatePath("/student");
-  revalidatePath(`/teacher/${subject}`);
-  revalidatePath(`/student/${subject}`);
-  revalidatePath("/teacher/probability-statistics");
-  revalidatePath("/teacher/microeconomics");
-  revalidatePath("/student/probability-statistics");
-  revalidatePath("/student/microeconomics");
+  for (const s of SUBJECTS) {
+    revalidatePath(`/teacher/${s}`);
+    revalidatePath(`/student/${s}`);
+  }
   revalidatePath(`/problems/${problemId}`);
   redirect(`/problems/${problemId}?viewer=teacher`);
 }

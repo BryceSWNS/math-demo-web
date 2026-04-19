@@ -25,6 +25,27 @@ function normalizeOptionMath(text: string) {
 }
 
 export function ProblemDetail({ problem, assets }: Props) {
+  const isMicroTerms = problem.subject === "microeconomics-terms";
+  const hasAnswer = Boolean(problem.answerMd?.trim());
+  const hasAnalysis = Boolean(problem.analysisMd?.trim());
+
+  const stemHeading = isMicroTerms ? "概念" : "题干";
+  const revealSummaryTitle = isMicroTerms ? "名词解释与案例" : "答案";
+  const revealHint = isMicroTerms
+    ? hasAnswer && hasAnalysis
+      ? "默认折叠，展开后可查看名词解释与案例"
+      : hasAnswer
+        ? "默认折叠，展开后可查看名词解释"
+        : "默认折叠，展开后可查看案例"
+    : hasAnswer && hasAnalysis
+      ? "点击展开后可查看答案与解析"
+      : hasAnswer
+        ? "点击展开后可查看答案"
+        : "点击展开后可查看解析";
+
+  const answerBlockHeading = isMicroTerms ? "名词解释" : "答案";
+  const analysisBlockHeading = isMicroTerms ? "案例" : "解析";
+
   return (
     <article className="card section-gap">
       <header>
@@ -41,7 +62,7 @@ export function ProblemDetail({ problem, assets }: Props) {
       </header>
 
       <section>
-        <h2>题干</h2>
+        <h2>{stemHeading}</h2>
         <MarkdownMath source={problem.stemMd} />
       </section>
 
@@ -58,17 +79,28 @@ export function ProblemDetail({ problem, assets }: Props) {
         </section>
       ) : null}
 
-      {problem.answerMd ? (
-        <section>
-          <h2>答案</h2>
-          <MarkdownMath source={problem.answerMd} />
-        </section>
-      ) : null}
-
-      {problem.analysisMd ? (
-        <section>
-          <h2>解析</h2>
-          <MarkdownMath source={problem.analysisMd} />
+      {hasAnswer || hasAnalysis ? (
+        <section className="answer-reveal-section">
+          <details className="answer-reveal">
+            <summary className="answer-reveal-summary">
+              <span className="answer-reveal-summary-title">{revealSummaryTitle}</span>
+              <span className="answer-reveal-summary-hint muted">{revealHint}</span>
+            </summary>
+            <div className="answer-reveal-body stack">
+              {problem.answerMd ? (
+                <>
+                  <h2 className="answer-reveal-subheading">{answerBlockHeading}</h2>
+                  <MarkdownMath source={problem.answerMd} />
+                </>
+              ) : null}
+              {problem.analysisMd ? (
+                <>
+                  <h2 className="answer-reveal-subheading">{analysisBlockHeading}</h2>
+                  <MarkdownMath source={problem.analysisMd} />
+                </>
+              ) : null}
+            </div>
+          </details>
         </section>
       ) : null}
 

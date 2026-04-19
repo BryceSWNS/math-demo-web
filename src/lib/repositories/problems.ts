@@ -1,10 +1,11 @@
 import { z } from "zod";
 
+import { SUBJECTS } from "@/lib/domain/subjects";
 import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject } from "@/lib/domain/types";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const createProblemInputSchema = z.object({
-  subject: z.enum(["probability-statistics", "microeconomics"]).default("probability-statistics"),
+  subject: z.enum(SUBJECTS).default("probability-statistics"),
   title: z.string().min(3).max(120),
   stemMd: z.string().min(1),
   options: z.array(z.object({ key: z.string().min(1), text: z.string().min(1) })).default([]),

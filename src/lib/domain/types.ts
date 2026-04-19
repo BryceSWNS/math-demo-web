@@ -1,7 +1,9 @@
+import type { Subject } from "./subjects";
+
 export type AuthorRole = "teacher" | "student";
 
 export type ProblemDifficulty = "easy" | "medium" | "hard";
-export type ProblemSubject = "probability-statistics" | "microeconomics";
+export type ProblemSubject = Subject;
 
 export type ProblemOption = {
   key: string;

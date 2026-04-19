@@ -5,7 +5,7 @@ export default function StudentHomePage() {
     <section className="section-gap">
       <h1>学生界面</h1>
       <p className="muted">请选择栏目后查看对应题目列表。</p>
-      <div className="grid-2">
+      <div className="grid-3">
         <article className="card">
           <h2>概率论与数理统计</h2>
           <p className="muted">随机变量、分布、估计、检验与回归等内容。</p>
@@ -15,6 +15,11 @@ export default function StudentHomePage() {
           <h2>微观经济学</h2>
           <p className="muted">消费者理论、生产与成本、市场结构等内容。</p>
           <Link href="/student/microeconomics">进入栏目</Link>
+        </article>
+        <article className="card">
+          <h2>微观名词解释</h2>
+          <p className="muted">微观经济学核心概念与术语释义。</p>
+          <Link href="/student/microeconomics-terms">进入栏目</Link>
         </article>
       </div>
     </section>

@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/components/submit-button";
-import { SUBJECT_LABELS, type Subject } from "@/lib/domain/subjects";
+import { SUBJECTS, SUBJECT_LABELS, type Subject } from "@/lib/domain/subjects";
 import type { ProblemRecord } from "@/lib/domain/types";
 
 type Props = {
@@ -78,8 +78,11 @@ export function ProblemForm({ formAction, mode, initialProblem, initialSubject }
         <label>
           栏目
           <select name="subject" defaultValue={subjectValue}>
-            <option value="probability-statistics">{SUBJECT_LABELS["probability-statistics"]}</option>
-            <option value="microeconomics">{SUBJECT_LABELS.microeconomics}</option>
+            {SUBJECTS.map((s) => (
+              <option key={s} value={s}>
+                {SUBJECT_LABELS[s]}
+              </option>
+            ))}
           </select>
         </label>
         <label>

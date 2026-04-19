@@ -12,6 +12,7 @@ isProject: false
 - 路由采用“角色 -> 栏目 -> 题目”的层级组织，栏目固定为：
   - `probability-statistics`（概率论与数理统计）
   - `microeconomics`（微观经济学）
+  - `microeconomics-terms`（微观名词解释）
 - 题目支持 Markdown + LaTeX、选项、答案、解析、标签、难度、图片/PDF 附件。
 - 评论支持楼中楼（邻接表），顶层分页、子回复按需加载。
 - 治理能力支持隐藏题目与隐藏评论，并写入治理审计日志。
@@ -70,6 +71,7 @@ isProject: false
 ### 5.1 `problems`
 
 - 核心字段：`subject`、`title`、`stem_md`、`options_json`、`answer_md`、`analysis_md`、`tags`、`difficulty`、`is_hidden`、`created_by_alias`、`author_user_id`、`created_at`
+- 当 `subject = microeconomics-terms`（微观名词解释）时，学生端将 `stem_md` / `answer_md` / `analysis_md` 分别呈现为「概念 / 名词解释 / 案例」语义，且后两者置于同一折叠区域内；AI 录入字段映射见 `docs/MICROECONOMICS_TERMS_UPLOAD_GUIDE.md`。
 - 关键索引：
   - `idx_problems_visible_created_at`
   - `idx_problems_subject_visible_created_at`
