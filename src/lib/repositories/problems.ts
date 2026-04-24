@@ -4,23 +4,49 @@ import { SUBJECTS } from "@/lib/domain/subjects";
 import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject } from "@/lib/domain/types";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
-const createProblemInputSchema = z.object({
+const problemInputBaseSchema = z.object({
   subject: z.enum(SUBJECTS).default("probability-statistics"),
+  questionNo: z
+    .string()
+    .trim()
+    .regex(/^\d+\.\d+$/, "题号格式必须为“章号.题号”，如 1.1 或 12.11")
+    .optional()
+    .nullable(),
   title: z.string().min(3).max(120),
   stemMd: z.string().min(1),
   options: z.array(z.object({ key: z.string().min(1), text: z.string().min(1) })).default([]),
   answerMd: z.string().default(""),
   analysisMd: z.string().default(""),
   tags: z.array(z.string().min(1).max(30)).default([]),
-  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
-  createdByAlias: z.string().min(2).max(24)
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium")
 });
 
-const updateProblemInputSchema = createProblemInputSchema.omit({ createdByAlias: true });
+const createProblemInputSchema = problemInputBaseSchema.extend({
+  createdByAlias: z.string().min(2).max(24)
+}).superRefine((data, ctx) => {
+  if (data.subject === "microeconomics-terms" && !data.questionNo) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["questionNo"],
+      message: "微观名词解释栏目必须填写题号，如 1.1"
+    });
+  }
+});
+
+const updateProblemInputSchema = problemInputBaseSchema.superRefine((data, ctx) => {
+  if (data.subject === "microeconomics-terms" && !data.questionNo) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["questionNo"],
+      message: "微观名词解释栏目必须填写题号，如 1.1"
+    });
+  }
+});
 
 type DbProblemRow = {
   id: string;
   subject: ProblemSubject | null;
+  question_no: string | null;
   title: string;
   stem_md: string;
   options_json: unknown;
@@ -49,12 +75,15 @@ export async function listVisibleProblems() {
 
 export async function listVisibleProblemsBySubject(subject: ProblemSubject) {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("problems")
-    .select("*")
-    .eq("is_hidden", false)
-    .eq("subject", subject)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("problems").select("*").eq("is_hidden", false).eq("subject", subject);
+  if (subject === "microeconomics-terms") {
+    query = query.order("chapter_no", { ascending: true, nullsFirst: false });
+    query = query.order("item_no", { ascending: true, nullsFirst: false });
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+  const { data, error } = await query;
   if (error) throw new Error(`按栏目加载题目失败: ${error.message}`);
   return (data ?? []).map(mapProblemRow);
 }
@@ -69,11 +98,13 @@ export async function getProblemById(problemId: string): Promise<ProblemRecord |
 
 export async function createProblem(input: CreateProblemInput): Promise<string> {
   const payload = createProblemInputSchema.parse(input);
+  const normalizedQuestionNo = payload.questionNo?.trim() || null;
   const supabase = createSupabaseServiceClient();
   const { data, error } = await supabase
     .from("problems")
     .insert({
       subject: payload.subject,
+      question_no: normalizedQuestionNo,
       title: payload.title,
       stem_md: payload.stemMd,
       options_json: payload.options,
@@ -91,11 +122,13 @@ export async function createProblem(input: CreateProblemInput): Promise<string> 
 
 export async function updateProblem(problemId: string, input: UpdateProblemInput): Promise<void> {
   const payload = updateProblemInputSchema.parse(input);
+  const normalizedQuestionNo = payload.questionNo?.trim() || null;
   const supabase = createSupabaseServiceClient();
   const { error } = await supabase
     .from("problems")
     .update({
       subject: payload.subject,
+      question_no: normalizedQuestionNo,
       title: payload.title,
       stem_md: payload.stemMd,
       options_json: payload.options,
@@ -146,6 +179,7 @@ function mapProblemRow(row: DbProblemRow): ProblemRecord {
   return {
     id: row.id,
     subject: row.subject ?? "probability-statistics",
+    questionNo: row.question_no,
     title: row.title,
     stemMd: row.stem_md,
     options: normalizeOptions(row.options_json),

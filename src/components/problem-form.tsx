@@ -22,6 +22,7 @@ function toTagsRaw(problem?: ProblemRecord) {
 export function ProblemForm({ formAction, mode, initialProblem, initialSubject }: Props) {
   const isEdit = mode === "edit";
   const subjectValue = initialProblem?.subject ?? initialSubject ?? "probability-statistics";
+  const isMicroTermsSubject = subjectValue === "microeconomics-terms";
 
   return (
     <form action={formAction} className="card form-grid">
@@ -41,6 +42,17 @@ export function ProblemForm({ formAction, mode, initialProblem, initialSubject }
       <label>
         标题
         <input name="title" defaultValue={initialProblem?.title ?? ""} required maxLength={120} />
+      </label>
+
+      <label>
+        题号（微观名词解释建议必填）
+        <input
+          name="questionNo"
+          defaultValue={initialProblem?.questionNo ?? ""}
+          placeholder="例如：1.1、12.11"
+          pattern="\\d+\\.\\d+"
+          required={isMicroTermsSubject}
+        />
       </label>
 
       <label>

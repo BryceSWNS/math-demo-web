@@ -13,6 +13,7 @@ export type ProblemOption = {
 export type ProblemRecord = {
   id: string;
   subject: ProblemSubject;
+  questionNo: string | null;
   title: string;
   stemMd: string;
   options: ProblemOption[];

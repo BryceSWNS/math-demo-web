@@ -49,7 +49,10 @@ export function ProblemDetail({ problem, assets }: Props) {
   return (
     <article className="card section-gap">
       <header>
-        <h1>{problem.title}</h1>
+        <h1>
+          {problem.questionNo ? `${problem.questionNo} ` : ""}
+          {problem.title}
+        </h1>
         <div className="meta-row">
           <span className="tag">{problem.difficulty}</span>
           {problem.tags.map((tag) => (

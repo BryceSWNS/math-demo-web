@@ -8,6 +8,16 @@
 
 ---
 
+## 2026-04-19（晚）
+
+### 微观名词解释：题号字段与排序试点
+- **背景**：栏目内题目在页面按创建时间展示，无法满足按题号（如 `1.1`、`12.11`）阅读与复习的顺序需求。
+- **变更**：新增迁移 `20260419_000005_micro_terms_question_no.sql`，在 `problems` 增加 `question_no` 及生成列 `chapter_no`/`item_no`，并加索引 `idx_problems_subject_visible_question_no`；题目发布/编辑表单新增题号输入，仓储层新增格式校验（`^\d+\.\d+$`）且要求 `microeconomics-terms` 必填；学生端/老师端栏目列表与详情标题展示题号；`microeconomics-terms` 列表改为按 `chapter_no`、`item_no` 升序（再按 `created_at` 兜底）排序。
+- **补充**：新增迁移 `20260419_000006_backfill_micro_terms_question_no.sql`，仅对 `microeconomics-terms` 且 `question_no` 为空的数据执行回填，按 `created_at asc`（并以 `id` 打破并列）依次写入 `1.1`、`1.2`、`1.3`...，用于历史数据一次性排齐。
+- **风险/待办**：当前表单“题号必填”前端校验仅在初始栏目为 `microeconomics-terms` 时生效，切换栏目场景依赖服务端兜底校验；后续可做按栏目动态必填提示。
+
+---
+
 ## 2026-04-19（下午）
 
 ### 微观名词解释：概念优先 + 折叠展示与上传规范文档

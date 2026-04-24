@@ -38,7 +38,10 @@ export default async function TeacherSubjectPage({ params }: Props) {
         {problems.map((problem) => (
           <article key={problem.id} className="card">
             <h2>
-              <Link href={`/problems/${problem.id}?viewer=teacher`}>{problem.title}</Link>
+              <Link href={`/problems/${problem.id}?viewer=teacher`}>
+                {problem.questionNo ? `${problem.questionNo} ` : ""}
+                {problem.title}
+              </Link>
             </h2>
             <p className="muted">
               难度: {problem.difficulty} | 标签: {problem.tags.join(", ") || "无"} | 发布者:{" "}

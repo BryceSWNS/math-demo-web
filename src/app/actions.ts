@@ -85,6 +85,7 @@ export async function createProblemAction(formData: FormData) {
   await ensureTeacherAuth("/teacher/problems/new");
   const identity = parseIdentity(formData);
   const title = String(formData.get("title") ?? "").trim();
+  const questionNo = String(formData.get("questionNo") ?? "").trim();
   const stemMd = String(formData.get("stemMd") ?? "").trim();
   const optionsRaw = String(formData.get("optionsRaw") ?? "");
   const answerMd = String(formData.get("answerMd") ?? "");
@@ -95,6 +96,7 @@ export async function createProblemAction(formData: FormData) {
 
   const problemId = await createProblem({
     subject,
+    questionNo: questionNo || null,
     title,
     stemMd,
     options: parseOptions(optionsRaw),
@@ -134,6 +136,7 @@ export async function updateProblemAction(formData: FormData) {
   await ensureTeacherAuth(`/teacher/problems/${problemId}/edit`);
 
   const title = String(formData.get("title") ?? "").trim();
+  const questionNo = String(formData.get("questionNo") ?? "").trim();
   const stemMd = String(formData.get("stemMd") ?? "").trim();
   const optionsRaw = String(formData.get("optionsRaw") ?? "");
   const answerMd = String(formData.get("answerMd") ?? "");
@@ -144,6 +147,7 @@ export async function updateProblemAction(formData: FormData) {
 
   await updateProblem(problemId, {
     subject,
+    questionNo: questionNo || null,
     title,
     stemMd,
     options: parseOptions(optionsRaw),

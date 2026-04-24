@@ -72,9 +72,11 @@ isProject: false
 
 - 核心字段：`subject`、`title`、`stem_md`、`options_json`、`answer_md`、`analysis_md`、`tags`、`difficulty`、`is_hidden`、`created_by_alias`、`author_user_id`、`created_at`
 - 当 `subject = microeconomics-terms`（微观名词解释）时，学生端将 `stem_md` / `answer_md` / `analysis_md` 分别呈现为「概念 / 名词解释 / 案例」语义，且后两者置于同一折叠区域内；AI 录入字段映射见 `docs/MICROECONOMICS_TERMS_UPLOAD_GUIDE.md`。
+- 该栏目试点题号：`question_no` 采用 `章号.题号`（如 `1.1`、`12.11`），并由生成列 `chapter_no`、`item_no` 支撑题号数值排序；其余栏目可暂不填写题号。
 - 关键索引：
   - `idx_problems_visible_created_at`
   - `idx_problems_subject_visible_created_at`
+  - `idx_problems_subject_visible_question_no`
   - `idx_problems_author_user_id`
 
 ### 5.2 `problem_assets`
