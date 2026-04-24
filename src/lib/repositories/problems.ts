@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { SUBJECTS } from "@/lib/domain/subjects";
-import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject } from "@/lib/domain/types";
+import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject, ProblemSummary } from "@/lib/domain/types";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const problemInputBaseSchema = z.object({
@@ -73,6 +73,8 @@ export async function listVisibleProblems() {
   return (data ?? []).map(mapProblemRow);
 }
 
+const SUMMARY_COLUMNS = "id,subject,question_no,title,stem_md,tags,difficulty,created_by_alias,created_at,chapter_no,item_no" as const;
+
 export async function listVisibleProblemsBySubject(subject: ProblemSubject) {
   const supabase = createSupabaseServerClient();
   let query = supabase.from("problems").select("*").eq("is_hidden", false).eq("subject", subject);
@@ -86,6 +88,35 @@ export async function listVisibleProblemsBySubject(subject: ProblemSubject) {
   const { data, error } = await query;
   if (error) throw new Error(`按栏目加载题目失败: ${error.message}`);
   return (data ?? []).map(mapProblemRow);
+}
+
+export async function listVisibleProblemSummariesBySubject(subject: ProblemSubject): Promise<ProblemSummary[]> {
+  const supabase = createSupabaseServerClient();
+  let query = supabase.from("problems").select(SUMMARY_COLUMNS).eq("is_hidden", false).eq("subject", subject);
+  if (subject === "microeconomics-terms") {
+    query = query.order("chapter_no", { ascending: true, nullsFirst: false });
+    query = query.order("item_no", { ascending: true, nullsFirst: false });
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(`按栏目加载题目失败: ${error.message}`);
+  return (data ?? []).map(mapProblemSummaryRow);
+}
+
+function mapProblemSummaryRow(row: Pick<DbProblemRow, "id" | "subject" | "question_no" | "title" | "stem_md" | "tags" | "difficulty" | "created_by_alias" | "created_at">): ProblemSummary {
+  return {
+    id: row.id,
+    subject: row.subject ?? "probability-statistics",
+    questionNo: row.question_no,
+    title: row.title,
+    stemMd: row.stem_md,
+    tags: row.tags ?? [],
+    difficulty: row.difficulty,
+    createdByAlias: row.created_by_alias,
+    createdAt: row.created_at,
+  };
 }
 
 export async function getProblemById(problemId: string): Promise<ProblemRecord | null> {

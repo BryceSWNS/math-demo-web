@@ -26,6 +26,11 @@ export type ProblemRecord = {
   createdAt: string;
 };
 
+export type ProblemSummary = Pick<
+  ProblemRecord,
+  "id" | "subject" | "questionNo" | "title" | "stemMd" | "tags" | "difficulty" | "createdByAlias" | "createdAt"
+>;
+
 export type ProblemAssetRecord = {
   id: string;
   problemId: string;

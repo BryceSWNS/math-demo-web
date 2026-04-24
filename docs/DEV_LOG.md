@@ -8,6 +8,22 @@
 
 ---
 
+## 2026-04-25
+
+### 前端性能优化：消除路由切换与列表滚动卡顿
+- **背景**：点击栏目进入列表、进入详情/评论、列表上下滚动时均存在明显卡顿。根因为：列表页 `select(*)` 拉全量重字段 + 一次性渲染全部 KaTeX 公式 + 详情页阻塞等待评论区查询完成 + 无路由级加载骨架屏。
+- **变更**：
+  1. 新增 `loading.tsx` 骨架屏（`/student/[subject]`、`/teacher/[subject]`、`/problems/[id]`），路由切换时立即展示占位动画，消除白屏等待。
+  2. 题目详情页 `CommentSection` 由 `<Suspense>` 包裹，题目正文先到即先出，评论区异步流式填充。
+  3. 新增 `LazyMarkdownMath` 组件（IntersectionObserver + 200px rootMargin），列表卡片中的 Markdown/公式仅在进入视口时才挂载渲染。
+  4. 仓储层新增 `listVisibleProblemSummariesBySubject`，列表页只查 9 个轻字段（不含 `answer_md`/`analysis_md`/`options_json`）；详情页保持完整查询不变。
+  5. 领域层新增 `ProblemSummary` 类型（`Pick<ProblemRecord, ...>`）供列表页使用。
+  6. `globals.css` 新增骨架屏脉冲动画样式。
+  7. `architecture.md` 3.1 节补充前端性能策略说明。
+- **风险/待办**：`listVisibleProblemsBySubject`（全字段）仍保留供需要完整数据的场景使用；若后续列表页内容需求变化需同步调整 `SUMMARY_COLUMNS`。
+
+---
+
 ## 2026-04-19（晚）
 
 ### 微观名词解释：题号字段与排序试点

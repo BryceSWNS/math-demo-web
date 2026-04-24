@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -11,6 +12,23 @@ type Props = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ page?: string; viewer?: string }>;
 };
+
+function CommentSectionSkeleton() {
+  return (
+    <section className="card section-gap">
+      <div className="skeleton-heading-sm" />
+      <div className="skeleton-text" />
+      <hr />
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="skeleton-comment">
+          <div className="skeleton-text-short" />
+          <div className="skeleton-text" />
+          <div className="skeleton-text" style={{ width: "70%" }} />
+        </div>
+      ))}
+    </section>
+  );
+}
 
 export default async function ProblemDetailPage({ params, searchParams }: Props) {
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
@@ -46,7 +64,9 @@ export default async function ProblemDetailPage({ params, searchParams }: Props)
           <AdminHideProblemForm problemId={problem.id} />
         </section>
       ) : null}
-      <CommentSection problemId={problem.id} page={page} viewer={viewer} />
+      <Suspense fallback={<CommentSectionSkeleton />}>
+        <CommentSection problemId={problem.id} page={page} viewer={viewer} />
+      </Suspense>
     </section>
   );
 }

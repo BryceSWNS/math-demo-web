@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { teacherLogoutAction } from "@/app/actions";
-import { MarkdownMath } from "@/components/markdown-math";
+import { LazyMarkdownMath } from "@/components/lazy-markdown-math";
 import { SUBJECT_LABELS, isSubject } from "@/lib/domain/subjects";
 import { buildTeacherLoginPath, isTeacherAuthenticated } from "@/lib/domain/teacher-auth";
-import { listVisibleProblemsBySubject } from "@/lib/repositories/problems";
+import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
 type Props = {
   params: Promise<{ subject: string }>;
@@ -18,7 +18,7 @@ export default async function TeacherSubjectPage({ params }: Props) {
     redirect(buildTeacherLoginPath(`/teacher/${subject}`) as never);
   }
 
-  const problems = await listVisibleProblemsBySubject(subject);
+  const problems = await listVisibleProblemSummariesBySubject(subject);
   const subjectLabel = SUBJECT_LABELS[subject];
 
   return (
@@ -48,7 +48,7 @@ export default async function TeacherSubjectPage({ params }: Props) {
               {problem.createdByAlias}
             </p>
             <div className="problem-excerpt">
-              <MarkdownMath source={problem.stemMd} />
+              <LazyMarkdownMath source={problem.stemMd} placeholderHeight={40} />
             </div>
             <div className="inline-links">
               <Link href={`/problems/${problem.id}?viewer=teacher`}>进入详情/评论</Link>

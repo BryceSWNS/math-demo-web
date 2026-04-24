@@ -37,8 +37,16 @@ isProject: false
 3. Repository 调用 Supabase：
    - 读操作：`anon key`（`createSupabaseServerClient`）
    - 写操作：`service role key`（`createSupabaseServiceClient`）
+   - 列表页使用轻量查询（`listVisibleProblemSummariesBySubject`，不查 `answer_md`/`analysis_md`/`options_json`）；详情页使用完整查询（`getProblemById`）。
 4. 数据写入 Postgres，附件上传至 Storage bucket `problem-assets`。
 5. 通过 `revalidatePath` 触发页面数据刷新，再 `redirect` 到目标页面。
+
+## 3.1 前端性能策略
+
+- **路由级骨架屏**：`/student/[subject]`、`/teacher/[subject]`、`/problems/[id]` 均配置 `loading.tsx`，路由切换时立即展示骨架占位，消除白屏等待。
+- **评论区 Suspense 流式**：题目详情页中 `CommentSection` 由 `<Suspense>` 包裹，题目正文先到即先渲染，评论区异步填充。
+- **视口内懒渲染**：列表卡片中的 Markdown + KaTeX 由 `LazyMarkdownMath`（IntersectionObserver）控制，仅进入视口 200px 范围时才挂载 `MarkdownMath`，避免一次性渲染全部公式。
+- **轻重查询分离**：列表页只查展示所需的 9 个轻字段；重字段（答案、解析、选项）仅在详情页按需加载。
 
 ## 4. 路由与权限模型
 

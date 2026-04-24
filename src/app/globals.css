@@ -328,6 +328,57 @@ hr {
   justify-content: space-between;
 }
 
+/* skeleton loading */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.15; }
+}
+
+.skeleton-card {
+  min-height: 100px;
+}
+
+.skeleton-heading,
+.skeleton-heading-sm,
+.skeleton-text,
+.skeleton-text-short {
+  background: #d0d5e0;
+  border-radius: 6px;
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton-heading {
+  height: 28px;
+  width: 40%;
+  margin-bottom: 10px;
+}
+
+.skeleton-heading-sm {
+  height: 20px;
+  width: 50%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-short {
+  height: 14px;
+  width: 30%;
+  margin-bottom: 8px;
+}
+
+/* comment section skeleton */
+.skeleton-comment {
+  border-left: 2px solid #dbe1ef;
+  padding-left: 12px;
+  margin-top: 10px;
+}
+
 @media (max-width: 700px) {
   .grid-2,
   .grid-3 {

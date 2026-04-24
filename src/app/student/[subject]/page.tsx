@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { MarkdownMath } from "@/components/markdown-math";
+import { LazyMarkdownMath } from "@/components/lazy-markdown-math";
 import { SUBJECT_LABELS, isSubject } from "@/lib/domain/subjects";
-import { listVisibleProblemsBySubject } from "@/lib/repositories/problems";
+import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
 type Props = {
   params: Promise<{ subject: string }>;
@@ -12,7 +12,7 @@ type Props = {
 export default async function StudentSubjectPage({ params }: Props) {
   const { subject } = await params;
   if (!isSubject(subject)) notFound();
-  const problems = await listVisibleProblemsBySubject(subject);
+  const problems = await listVisibleProblemSummariesBySubject(subject);
   const subjectLabel = SUBJECT_LABELS[subject];
 
   return (
@@ -36,7 +36,7 @@ export default async function StudentSubjectPage({ params }: Props) {
               {problem.createdByAlias}
             </p>
             <div className="problem-excerpt">
-              <MarkdownMath source={problem.stemMd} />
+              <LazyMarkdownMath source={problem.stemMd} placeholderHeight={40} />
             </div>
             <Link href={`/problems/${problem.id}?viewer=student`}>进入详情/评论</Link>
           </article>
