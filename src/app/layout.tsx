@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { TopbarBrand } from "@/components/topbar-brand";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,9 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header className="topbar">
           <div className="container topbar-inner">
-            <Link href="/" className="brand">
-              乐湖华研题库
-            </Link>
+            <TopbarBrand />
             <nav>
               <Link href="/student">学生界面</Link>
               <Link href="/teacher/login?next=%2Fteacher">老师界面</Link>

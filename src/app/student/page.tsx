@@ -3,8 +3,6 @@ import Link from "next/link";
 export default function StudentHomePage() {
   return (
     <section className="section-gap">
-      <h1>学生界面</h1>
-      <p className="muted">请选择栏目后查看对应题目列表。</p>
       <div className="grid-3">
         <article className="card">
           <h2>概率论与数理统计</h2>

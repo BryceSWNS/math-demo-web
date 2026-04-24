@@ -43,10 +43,12 @@ export default async function TeacherSubjectPage({ params }: Props) {
                 {problem.title}
               </Link>
             </h2>
-            <p className="muted">
-              难度: {problem.difficulty} | 标签: {problem.tags.join(", ") || "无"} | 发布者:{" "}
-              {problem.createdByAlias}
-            </p>
+            {subject !== "microeconomics-terms" ? (
+              <p className="muted">
+                难度: {problem.difficulty} | 标签: {problem.tags.join(", ") || "无"} | 发布者:{" "}
+                {problem.createdByAlias}
+              </p>
+            ) : null}
             <div className="problem-excerpt">
               <LazyMarkdownMath source={problem.stemMd} placeholderHeight={40} />
             </div>
