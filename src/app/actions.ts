@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { parseIdentity } from "@/lib/domain/identity";
-import { SUBJECTS, isSubject } from "@/lib/domain/subjects";
+import { SUBJECTS, getSubjectChapters, isSubject } from "@/lib/domain/subjects";
 import { TEACHER_AUTH_COOKIE, buildTeacherLoginPath, isTeacherAuthenticated, sanitizeNextPath } from "@/lib/domain/teacher-auth";
 import { createComment, hideComment } from "@/lib/repositories/comments";
 import { createModerationEvent } from "@/lib/repositories/moderation";
@@ -125,6 +125,10 @@ export async function createProblemAction(formData: FormData) {
   for (const s of SUBJECTS) {
     revalidatePath(`/teacher/${s}`);
     revalidatePath(`/student/${s}`);
+    for (const chapter of getSubjectChapters(s)) {
+      revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}`);
+      revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}`);
+    }
   }
   revalidatePath(`/problems/${problemId}`);
   redirect(`/problems/${problemId}?viewer=teacher`);
@@ -176,6 +180,10 @@ export async function updateProblemAction(formData: FormData) {
   for (const s of SUBJECTS) {
     revalidatePath(`/teacher/${s}`);
     revalidatePath(`/student/${s}`);
+    for (const chapter of getSubjectChapters(s)) {
+      revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}`);
+      revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}`);
+    }
   }
   revalidatePath(`/problems/${problemId}`);
   redirect(`/problems/${problemId}?viewer=teacher`);

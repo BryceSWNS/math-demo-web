@@ -13,6 +13,7 @@ isProject: false
   - `probability-statistics`（概率论与数理统计）
   - `microeconomics`（微观经济学）
   - `microeconomics-terms`（微观名词解释）
+- 领域层维护栏目元数据（`src/lib/domain/subjects.ts`），其中“概率论与数理统计”已补齐第 1 至第 7 章标题配置，用于按章录题与后续章节化展示扩展。
 - 题目支持 Markdown + LaTeX、选项、答案、解析、标签、难度、图片/PDF 附件。
 - 评论支持楼中楼（邻接表），顶层分页、子回复按需加载。
 - 治理能力支持隐藏题目与隐藏评论，并写入治理审计日志。
@@ -54,7 +55,8 @@ isProject: false
 
 - `/`：当前实现直接重定向到 `/student`。
 - `/student`：栏目选择页。
-- `/student/[subject]`：栏目题目列表，仅展示可见题目。
+- `/student/[subject]`：栏目页；其中 `probability-statistics` 展示章节列表，其余栏目展示题目列表。
+- `/student/probability-statistics/chapter/[chapterNo]`：概率论与数理统计分章题目列表页。
 - `/problems/[id]?viewer=student`：题目详情 + 评论区（默认学生视角）。
 
 ### 4.2 老师侧
@@ -62,7 +64,8 @@ isProject: false
 - `/teacher/login`：口令登录页；校验 `ADMIN_TOKEN`。
 - 登录成功写入 `teacher_auth` Cookie（8 小时、httpOnly、sameSite=lax）。
 - `/teacher`：栏目选择页（要求已登录）。
-- `/teacher/[subject]`：栏目题目管理页（要求已登录）。
+- `/teacher/[subject]`：栏目管理页；其中 `probability-statistics` 展示章节列表，其余栏目展示题目管理列表（要求已登录）。
+- `/teacher/probability-statistics/chapter/[chapterNo]`：概率论与数理统计分章题目管理页（要求已登录）。
 - `/teacher/problems/new`：发布题目（要求已登录）。
 - `/teacher/problems/[id]/edit`：编辑题目（要求已登录）。
 - `/problems/[id]?viewer=teacher`：老师视角详情页（要求已登录，展示编辑/治理入口）。

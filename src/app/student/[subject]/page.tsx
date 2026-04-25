@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LazyMarkdownMath } from "@/components/lazy-markdown-math";
-import { isSubject } from "@/lib/domain/subjects";
+import { SUBJECT_LABELS, getSubjectChapters, isSubject, parseQuestionNo } from "@/lib/domain/subjects";
 import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
 type Props = {
@@ -13,6 +13,34 @@ export default async function StudentSubjectPage({ params }: Props) {
   const { subject } = await params;
   if (!isSubject(subject)) notFound();
   const problems = await listVisibleProblemSummariesBySubject(subject);
+  const chapters = getSubjectChapters(subject);
+
+  if (chapters.length > 0) {
+    const chapterCountMap = new Map<number, number>();
+    for (const problem of problems) {
+      const parsed = parseQuestionNo(problem.questionNo);
+      if (!parsed) continue;
+      chapterCountMap.set(parsed.chapterNo, (chapterCountMap.get(parsed.chapterNo) ?? 0) + 1);
+    }
+
+    return (
+      <section className="section-gap">
+        <h1>{SUBJECT_LABELS[subject]} · 章节列表</h1>
+        <p className="muted">请先选择章节，再进入该章节题目列表。</p>
+        <div className="grid-3">
+          {chapters.map((chapter) => (
+            <article key={chapter.chapterNo} className="card">
+              <h2>
+                第 {chapter.chapterNo} 章 · {chapter.title}
+              </h2>
+              <p className="muted">题目数：{chapterCountMap.get(chapter.chapterNo) ?? 0}</p>
+              <Link href={`/student/${subject}/chapter/${chapter.chapterNo}`}>进入本章题目</Link>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="section-gap">
