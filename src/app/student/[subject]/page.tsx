@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LazyMarkdownMath } from "@/components/lazy-markdown-math";
-import { SUBJECT_LABELS, getSubjectChapters, isSubject, parseQuestionNo } from "@/lib/domain/subjects";
+import { getSubjectChapters, isSubject, parseQuestionNo } from "@/lib/domain/subjects";
 import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
 type Props = {
@@ -25,8 +25,6 @@ export default async function StudentSubjectPage({ params }: Props) {
 
     return (
       <section className="section-gap">
-        <h1>{SUBJECT_LABELS[subject]} · 章节列表</h1>
-        <p className="muted">请先选择章节，再进入该章节题目列表。</p>
         <div className="grid-3">
           {chapters.map((chapter) => (
             <article key={chapter.chapterNo} className="card">
