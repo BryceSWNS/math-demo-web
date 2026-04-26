@@ -13,6 +13,14 @@ import { addProblemAssets, createProblem, hideProblem, updateProblem } from "@/l
 import { inferAssetType, uploadProblemAttachment } from "@/lib/repositories/storage";
 import { getServerSupabaseEnv } from "@/lib/supabase/env";
 
+const CHAPTER_SECTION_SLUGS = ["examples", "exercises"] as const;
+
+function parseChapterSection(raw: string): (typeof CHAPTER_SECTION_SLUGS)[number] | null {
+  const normalized = raw.trim();
+  if (normalized === "examples" || normalized === "exercises") return normalized;
+  return null;
+}
+
 function ensureAdminToken(inputToken: string) {
   const env = getServerSupabaseEnv();
   if (inputToken !== env.ADMIN_TOKEN) {
@@ -93,17 +101,21 @@ export async function createProblemAction(formData: FormData) {
   const tagsRaw = String(formData.get("tagsRaw") ?? "");
   const difficulty = String(formData.get("difficulty") ?? "medium");
   const subject = parseSubject(String(formData.get("subject") ?? "probability-statistics"));
+  const chapterSection = parseChapterSection(String(formData.get("chapterSection") ?? ""));
+
+  const effectiveTitle = title || stemMd.replace(/\s+/g, " ").slice(0, 120);
 
   const problemId = await createProblem({
     subject,
     questionNo: questionNo || null,
-    title,
+    title: effectiveTitle,
     stemMd,
     options: parseOptions(optionsRaw),
     answerMd,
     analysisMd,
     tags: parseTags(tagsRaw),
     difficulty: difficulty as "easy" | "medium" | "hard",
+    chapterSection,
     createdByAlias: identity.alias
   });
 
@@ -128,6 +140,10 @@ export async function createProblemAction(formData: FormData) {
     for (const chapter of getSubjectChapters(s)) {
       revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}`);
       revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}`);
+      for (const section of CHAPTER_SECTION_SLUGS) {
+        revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}/${section}`);
+        revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}/${section}`);
+      }
     }
   }
   revalidatePath(`/problems/${problemId}`);
@@ -148,17 +164,21 @@ export async function updateProblemAction(formData: FormData) {
   const tagsRaw = String(formData.get("tagsRaw") ?? "");
   const difficulty = String(formData.get("difficulty") ?? "medium");
   const subject = parseSubject(String(formData.get("subject") ?? "probability-statistics"));
+  const chapterSection = parseChapterSection(String(formData.get("chapterSection") ?? ""));
+
+  const effectiveTitle = title || stemMd.replace(/\s+/g, " ").slice(0, 120);
 
   await updateProblem(problemId, {
     subject,
     questionNo: questionNo || null,
-    title,
+    title: effectiveTitle,
     stemMd,
     options: parseOptions(optionsRaw),
     answerMd,
     analysisMd,
     tags: parseTags(tagsRaw),
-    difficulty: difficulty as "easy" | "medium" | "hard"
+    difficulty: difficulty as "easy" | "medium" | "hard",
+    chapterSection
   });
 
   const files = formData.getAll("attachments").filter((x): x is File => x instanceof File && x.size > 0);
@@ -183,6 +203,10 @@ export async function updateProblemAction(formData: FormData) {
     for (const chapter of getSubjectChapters(s)) {
       revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}`);
       revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}`);
+      for (const section of CHAPTER_SECTION_SLUGS) {
+        revalidatePath(`/teacher/${s}/chapter/${chapter.chapterNo}/${section}`);
+        revalidatePath(`/student/${s}/chapter/${chapter.chapterNo}/${section}`);
+      }
     }
   }
   revalidatePath(`/problems/${problemId}`);

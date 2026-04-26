@@ -5,6 +5,13 @@ import { LazyMarkdownMath } from "@/components/lazy-markdown-math";
 import { getSubjectChapters, isSubject, parseQuestionNo } from "@/lib/domain/subjects";
 import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
+const CHAPTER_SECTIONS = [
+  { slug: "examples", label: "例题" },
+  { slug: "exercises", label: "习题" }
+] as const;
+
+type ChapterSectionSlug = (typeof CHAPTER_SECTIONS)[number]["slug"];
+
 type Props = {
   params: Promise<{ subject: string }>;
 };
@@ -15,12 +22,17 @@ export default async function StudentSubjectPage({ params }: Props) {
   const problems = await listVisibleProblemSummariesBySubject(subject);
   const chapters = getSubjectChapters(subject);
 
-  if (chapters.length > 0) {
+  if (subject === "probability-statistics" && chapters.length > 0) {
     const chapterCountMap = new Map<number, number>();
+    const chapterSectionCountMap = new Map<number, Map<ChapterSectionSlug, number>>();
     for (const problem of problems) {
       const parsed = parseQuestionNo(problem.questionNo);
       if (!parsed) continue;
       chapterCountMap.set(parsed.chapterNo, (chapterCountMap.get(parsed.chapterNo) ?? 0) + 1);
+      const section = problem.chapterSection ?? "exercises";
+      const sectionMap = chapterSectionCountMap.get(parsed.chapterNo) ?? new Map<ChapterSectionSlug, number>();
+      sectionMap.set(section, (sectionMap.get(section) ?? 0) + 1);
+      chapterSectionCountMap.set(parsed.chapterNo, sectionMap);
     }
 
     return (
@@ -32,7 +44,13 @@ export default async function StudentSubjectPage({ params }: Props) {
                 第 {chapter.chapterNo} 章 · {chapter.title}
               </h2>
               <p className="muted">题目数：{chapterCountMap.get(chapter.chapterNo) ?? 0}</p>
-              <Link href={`/student/${subject}/chapter/${chapter.chapterNo}`}>进入本章题目</Link>
+              <div className="inline-links">
+                {CHAPTER_SECTIONS.map((section) => (
+                  <Link key={section.slug} href={`/student/${subject}/chapter/${chapter.chapterNo}/${section.slug}`}>
+                    {section.label}（{chapterSectionCountMap.get(chapter.chapterNo)?.get(section.slug) ?? 0}）
+                  </Link>
+                ))}
+              </div>
             </article>
           ))}
         </div>

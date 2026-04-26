@@ -26,6 +26,7 @@ function normalizeOptionMath(text: string) {
 
 export function ProblemDetail({ problem, assets }: Props) {
   const isMicroTerms = problem.subject === "microeconomics-terms";
+  const isProbability = problem.subject === "probability-statistics";
   const hasAnswer = Boolean(problem.answerMd?.trim());
   const hasAnalysis = Boolean(problem.analysisMd?.trim());
 
@@ -50,8 +51,9 @@ export function ProblemDetail({ problem, assets }: Props) {
     <article className="card section-gap">
       <header>
         <h1>
-          {problem.questionNo ? `${problem.questionNo} ` : ""}
-          {problem.title}
+          {isProbability && problem.questionNo
+            ? problem.questionNo
+            : `${problem.questionNo ? `${problem.questionNo} ` : ""}${problem.title}`}
         </h1>
         <div className="meta-row">
           <span className="tag">{problem.difficulty}</span>

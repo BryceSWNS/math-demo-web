@@ -200,6 +200,36 @@ hr {
   display: inline;
 }
 
+.markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  font-size: 14px;
+  overflow-x: auto;
+  display: block;
+}
+
+.markdown thead {
+  background: #f0f2f7;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid #dbe0ea;
+  padding: 6px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.markdown th {
+  font-weight: 600;
+  color: #374778;
+}
+
+.markdown tr:nth-child(even) {
+  background: #fafbff;
+}
+
 .markdown .katex-display {
   margin: 0.35rem 0;
   text-align: left;
@@ -208,6 +238,91 @@ hr {
 .markdown .katex {
   font-size: 1.02em;
 }
+
+/* breadcrumb */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: #5b647a;
+}
+
+.breadcrumb a {
+  color: #245bdb;
+}
+
+.breadcrumb-sep::before {
+  content: "/";
+  color: #b0b8cc;
+}
+
+/* problem list */
+
+.problem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #dfe3ec;
+  border: 1px solid #dfe3ec;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.problem-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.problem-card:hover {
+  background: #f5f7ff;
+  text-decoration: none;
+}
+
+.problem-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.problem-card-no {
+  font-weight: 600;
+  font-size: 15px;
+  color: #245bdb;
+  flex-shrink: 0;
+}
+
+.problem-card-action {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.problem-card-stem {
+  font-size: 14px;
+  color: #3a3f50;
+  line-height: 1.55;
+  max-height: 66px;
+  overflow: hidden;
+}
+
+.problem-card-stem .markdown p {
+  margin: 0;
+}
+
+.problem-card-meta {
+  font-size: 12px;
+  color: #8b93a8;
+}
+
+/* legacy excerpt (non-probability list pages) */
 
 .problem-excerpt {
   max-height: 140px;

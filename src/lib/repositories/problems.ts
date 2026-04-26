@@ -4,12 +4,14 @@ import { SUBJECTS } from "@/lib/domain/subjects";
 import type { ProblemDifficulty, ProblemOption, ProblemRecord, ProblemSubject, ProblemSummary } from "@/lib/domain/types";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
+const chapterSectionSchema = z.enum(["examples", "exercises"]);
+
 const problemInputBaseSchema = z.object({
   subject: z.enum(SUBJECTS).default("probability-statistics"),
   questionNo: z
     .string()
     .trim()
-    .regex(/^\d+\.\d+$/, "题号格式必须为“章号.题号”，如 1.1 或 12.11")
+    .regex(/^(\d+\.\d+|(例 )?\d+\.\d+\.\d+)$/, "题号格式如 1.1、1.1.1 或 例 1.1.1")
     .optional()
     .nullable(),
   title: z.string().min(3).max(120),
@@ -18,7 +20,8 @@ const problemInputBaseSchema = z.object({
   answerMd: z.string().default(""),
   analysisMd: z.string().default(""),
   tags: z.array(z.string().min(1).max(30)).default([]),
-  difficulty: z.enum(["easy", "medium", "hard"]).default("medium")
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+  chapterSection: chapterSectionSchema.optional().nullable()
 });
 
 const createProblemInputSchema = problemInputBaseSchema.extend({
@@ -31,6 +34,13 @@ const createProblemInputSchema = problemInputBaseSchema.extend({
       message: "微观名词解释栏目必须填写题号，如 1.1"
     });
   }
+  if (data.subject === "probability-statistics" && !data.chapterSection) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["chapterSection"],
+      message: "概率论与数理统计栏目必须选择“例题”或“习题”"
+    });
+  }
 });
 
 const updateProblemInputSchema = problemInputBaseSchema.superRefine((data, ctx) => {
@@ -41,12 +51,20 @@ const updateProblemInputSchema = problemInputBaseSchema.superRefine((data, ctx) 
       message: "微观名词解释栏目必须填写题号，如 1.1"
     });
   }
+  if (data.subject === "probability-statistics" && !data.chapterSection) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["chapterSection"],
+      message: "概率论与数理统计栏目必须选择“例题”或“习题”"
+    });
+  }
 });
 
 type DbProblemRow = {
   id: string;
   subject: ProblemSubject | null;
   question_no: string | null;
+  chapter_section: "examples" | "exercises" | null;
   title: string;
   stem_md: string;
   options_json: unknown;
@@ -73,7 +91,8 @@ export async function listVisibleProblems() {
   return (data ?? []).map(mapProblemRow);
 }
 
-const SUMMARY_COLUMNS = "id,subject,question_no,title,stem_md,tags,difficulty,created_by_alias,created_at,chapter_no,item_no" as const;
+const SUMMARY_COLUMNS =
+  "id,subject,question_no,chapter_section,title,stem_md,tags,difficulty,created_by_alias,created_at,chapter_no,item_no,sub_item_no" as const;
 
 export async function listVisibleProblemsBySubject(subject: ProblemSubject) {
   const supabase = createSupabaseServerClient();
@@ -105,11 +124,17 @@ export async function listVisibleProblemSummariesBySubject(subject: ProblemSubje
   return (data ?? []).map(mapProblemSummaryRow);
 }
 
-function mapProblemSummaryRow(row: Pick<DbProblemRow, "id" | "subject" | "question_no" | "title" | "stem_md" | "tags" | "difficulty" | "created_by_alias" | "created_at">): ProblemSummary {
+function mapProblemSummaryRow(
+  row: Pick<
+    DbProblemRow,
+    "id" | "subject" | "question_no" | "chapter_section" | "title" | "stem_md" | "tags" | "difficulty" | "created_by_alias" | "created_at"
+  >
+): ProblemSummary {
   return {
     id: row.id,
     subject: row.subject ?? "probability-statistics",
     questionNo: row.question_no,
+    chapterSection: row.chapter_section,
     title: row.title,
     stemMd: row.stem_md,
     tags: row.tags ?? [],
@@ -130,12 +155,14 @@ export async function getProblemById(problemId: string): Promise<ProblemRecord |
 export async function createProblem(input: CreateProblemInput): Promise<string> {
   const payload = createProblemInputSchema.parse(input);
   const normalizedQuestionNo = payload.questionNo?.trim() || null;
+  const normalizedChapterSection = payload.chapterSection ?? null;
   const supabase = createSupabaseServiceClient();
   const { data, error } = await supabase
     .from("problems")
     .insert({
       subject: payload.subject,
       question_no: normalizedQuestionNo,
+      chapter_section: normalizedChapterSection,
       title: payload.title,
       stem_md: payload.stemMd,
       options_json: payload.options,
@@ -154,12 +181,14 @@ export async function createProblem(input: CreateProblemInput): Promise<string> 
 export async function updateProblem(problemId: string, input: UpdateProblemInput): Promise<void> {
   const payload = updateProblemInputSchema.parse(input);
   const normalizedQuestionNo = payload.questionNo?.trim() || null;
+  const normalizedChapterSection = payload.chapterSection ?? null;
   const supabase = createSupabaseServiceClient();
   const { error } = await supabase
     .from("problems")
     .update({
       subject: payload.subject,
       question_no: normalizedQuestionNo,
+      chapter_section: normalizedChapterSection,
       title: payload.title,
       stem_md: payload.stemMd,
       options_json: payload.options,
@@ -211,6 +240,7 @@ function mapProblemRow(row: DbProblemRow): ProblemRecord {
     id: row.id,
     subject: row.subject ?? "probability-statistics",
     questionNo: row.question_no,
+    chapterSection: row.chapter_section,
     title: row.title,
     stemMd: row.stem_md,
     options: normalizeOptions(row.options_json),

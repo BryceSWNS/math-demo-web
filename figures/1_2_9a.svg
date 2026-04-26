@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200">
+  <!-- two parallel horizontal lines -->
+  <line x1="20" y1="30" x2="220" y2="30" stroke="black" stroke-width="1.5"/>
+  <line x1="20" y1="170" x2="220" y2="170" stroke="black" stroke-width="1.5"/>
+  <!-- d label with arrows on left -->
+  <defs>
+    <marker id="au" markerWidth="6" markerHeight="6" refX="3" refY="6" orient="auto"><polygon points="0,6 3,0 6,6" fill="black"/></marker>
+    <marker id="ad" markerWidth="6" markerHeight="6" refX="3" refY="0" orient="auto"><polygon points="0,0 3,6 6,0" fill="black"/></marker>
+  </defs>
+  <line x1="32" y1="30" x2="32" y2="170" stroke="black" stroke-width="0.8" marker-start="url(#au)" marker-end="url(#ad)"/>
+  <text x="16" y="105" font-size="14" font-family="serif" font-style="italic">d</text>
+  <!-- needle: center close to upper line, angled ~35 deg -->
+  <line x1="85" y1="88" x2="175" y2="42" stroke="black" stroke-width="2.2"/>
+  <!-- center dot -->
+  <circle cx="130" cy="65" r="2" fill="black"/>
+  <!-- x: vertical dashed line from center UP to upper line -->
+  <line x1="130" y1="65" x2="130" y2="30" stroke="black" stroke-width="0.8" stroke-dasharray="3,2"/>
+  <text x="117" y="52" font-size="14" font-family="serif" font-style="italic">x</text>
+  <!-- horizontal dashed reference from center to the right -->
+  <line x1="130" y1="65" x2="185" y2="65" stroke="black" stroke-width="0.6" stroke-dasharray="2,2"/>
+  <!-- phi arc: angle between horizontal-right and needle-upper-right at center -->
+  <path d="M 152,65 A 22,22 0 0,0 153,54" fill="none" stroke="black" stroke-width="0.8"/>
+  <text x="155" y="60" font-size="13" font-family="serif" font-style="italic">&#966;</text>
+  <!-- caption -->
+  <text x="120" y="195" font-size="12" font-family="serif" text-anchor="middle">&#22270; 1.2.5 &#160; &#27604;&#20016;&#25237;&#38024;&#38382;&#39064;</text>
+</svg>

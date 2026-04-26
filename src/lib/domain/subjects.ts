@@ -29,14 +29,23 @@ export function getSubjectChapters(subject: Subject): SubjectChapter[] {
   return SUBJECT_CHAPTERS[subject] ?? [];
 }
 
-export function parseQuestionNo(questionNo: string | null): { chapterNo: number; itemNo: number } | null {
+export function parseQuestionNo(
+  questionNo: string | null
+): { chapterNo: number; itemNo: number; subItemNo?: number } | null {
   if (!questionNo) return null;
-  const matched = questionNo.trim().match(/^(\d+)\.(\d+)$/);
-  if (!matched) return null;
-  return {
-    chapterNo: Number(matched[1]),
-    itemNo: Number(matched[2])
-  };
+  const raw = questionNo.trim().replace(/^例\s*/, "");
+  const parts = raw.split(".");
+  if (parts.length === 2) {
+    const [ch, it] = parts.map(Number);
+    if (!Number.isFinite(ch) || !Number.isFinite(it)) return null;
+    return { chapterNo: ch, itemNo: it };
+  }
+  if (parts.length === 3) {
+    const [ch, sec, prob] = parts.map(Number);
+    if (!Number.isFinite(ch) || !Number.isFinite(sec) || !Number.isFinite(prob)) return null;
+    return { chapterNo: ch, itemNo: sec, subItemNo: prob };
+  }
+  return null;
 }
 
 export function isSubject(value: string): value is Subject {

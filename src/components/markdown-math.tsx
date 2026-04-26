@@ -4,6 +4,7 @@ import "katex/dist/katex.min.css";
 
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 type Props = {
@@ -23,7 +24,7 @@ export function MarkdownMath({ source, inline = false }: Props) {
   return (
     <Wrapper className={`markdown${inline ? " markdown-inline" : ""}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
         components={
           inline

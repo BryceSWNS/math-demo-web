@@ -7,6 +7,13 @@ import { SUBJECT_LABELS, getSubjectChapters, isSubject, parseQuestionNo } from "
 import { buildTeacherLoginPath, isTeacherAuthenticated } from "@/lib/domain/teacher-auth";
 import { listVisibleProblemSummariesBySubject } from "@/lib/repositories/problems";
 
+const CHAPTER_SECTIONS = [
+  { slug: "examples", label: "例题" },
+  { slug: "exercises", label: "习题" }
+] as const;
+
+type ChapterSectionSlug = (typeof CHAPTER_SECTIONS)[number]["slug"];
+
 type Props = {
   params: Promise<{ subject: string }>;
 };
@@ -22,18 +29,22 @@ export default async function TeacherSubjectPage({ params }: Props) {
   const subjectLabel = SUBJECT_LABELS[subject];
   const chapters = getSubjectChapters(subject);
 
-  if (chapters.length > 0) {
+  if (subject === "probability-statistics" && chapters.length > 0) {
     const chapterCountMap = new Map<number, number>();
+    const chapterSectionCountMap = new Map<number, Map<ChapterSectionSlug, number>>();
     for (const problem of problems) {
       const parsed = parseQuestionNo(problem.questionNo);
       if (!parsed) continue;
       chapterCountMap.set(parsed.chapterNo, (chapterCountMap.get(parsed.chapterNo) ?? 0) + 1);
+      const section = problem.chapterSection ?? "exercises";
+      const sectionMap = chapterSectionCountMap.get(parsed.chapterNo) ?? new Map<ChapterSectionSlug, number>();
+      sectionMap.set(section, (sectionMap.get(section) ?? 0) + 1);
+      chapterSectionCountMap.set(parsed.chapterNo, sectionMap);
     }
 
     return (
       <section className="section-gap">
         <h1>老师界面 · {subjectLabel}</h1>
-        <p className="muted">请先选择章节，再进入该章节题目列表进行管理。</p>
         <div className="inline-links">
           <Link href="/teacher">返回栏目</Link>
           <Link href={`/teacher/problems/new?subject=${subject}`}>发布新题目</Link>
@@ -50,7 +61,13 @@ export default async function TeacherSubjectPage({ params }: Props) {
                 第 {chapter.chapterNo} 章 · {chapter.title}
               </h2>
               <p className="muted">题目数：{chapterCountMap.get(chapter.chapterNo) ?? 0}</p>
-              <Link href={`/teacher/${subject}/chapter/${chapter.chapterNo}`}>进入本章题目</Link>
+              <div className="inline-links">
+                {CHAPTER_SECTIONS.map((section) => (
+                  <Link key={section.slug} href={`/teacher/${subject}/chapter/${chapter.chapterNo}/${section.slug}`}>
+                    {section.label}（{chapterSectionCountMap.get(chapter.chapterNo)?.get(section.slug) ?? 0}）
+                  </Link>
+                ))}
+              </div>
             </article>
           ))}
         </div>

@@ -1,0 +1,82 @@
+-- 概率论与数理统计：例题 1.2.3 批量导入
+-- 幂等处理：若同 subject + question_no 已存在，则跳过。
+
+insert into public.problems (
+  question_no,
+  subject,
+  chapter_section,
+  title,
+  stem_md,
+  options_json,
+  answer_md,
+  analysis_md,
+  tags,
+  difficulty,
+  created_by_alias
+)
+select
+  '例 1.2.3',
+  'probability-statistics',
+  'examples',
+  '抽样模型',
+  '例 1.2.3（抽样模型）一批产品共有 $N$ 件，其中 $M$ 件是不合格品，$N-M$ 件是合格品。从中随机取出 $n$ 件（$n \le N$），试求事件 $A_m$ = "取出的 $n$ 件产品中有 $m$ 件不合格品"的概率（$m \le M$，$n-m \le N-M$）。',
+  '[]'::jsonb,
+  '',
+  '先计算样本空间 $\Omega$ 中样本点的总数：从 $N$ 件产品中任取 $n$ 件，因为不讲次序，所以样本点的总数为 $\binom{N}{n}$。又因为是随机抽取的，所以这 $\binom{N}{n}$ 个样本点是等可能的。
+
+下面我们先计算事件 $A_0$、$A_1$ 的概率，然后再计算 $A_m$ 的概率。
+
+因为事件 $A_0$ = "取出的 $n$ 件产品中有 0 件不合格品" = "取出的 $n$ 件产品全是合格品"，这意味着取出的 $n$ 件产品全是从 $N-M$ 件合格品中抽取，所以有 $\binom{N-M}{n}$ 种取法，故 $A_0$ 的概率为
+
+$$
+P(A_0) = \frac{\binom{N-M}{n}}{\binom{N}{n}}.
+$$
+
+事件 $A_1$ = "取出的 $n$ 件产品中有 1 件不合格品"，要使取出的 $n$ 件产品中只有 1 件不合格品，其他 $n-1$ 件是合格品，那么必须分两步进行：
+
+第一步：从 $M$ 件不合格品中随机取出 1 件，共有 $\binom{M}{1}$ 种取法。
+
+第二步：从 $N-M$ 件合格品中随机取出 $n-1$ 件，共有 $\binom{N-M}{n-1}$ 种取法。
+
+所以根据乘法原理，$A_1$ 中共有 $\binom{M}{1}\binom{N-M}{n-1}$ 个样本点。故 $A_1$ 的概率为
+
+$$
+P(A_1) = \frac{\binom{M}{1}\binom{N-M}{n-1}}{\binom{N}{n}}.
+$$
+
+有了以上对 $A_0$ 和 $A_1$ 的分析，我们就容易计算一般事件 $A_m$ 中含有的样本点个数：要使 $A_m$ 发生，必须从 $M$ 件不合格品中抽 $m$ 件，再从 $N-M$ 件合格品中抽 $n-m$ 件，根据乘法原理，$A_m$ 含有 $\binom{M}{m}\binom{N-M}{n-m}$ 个样本点，由此得 $A_m$ 的概率为
+
+$$
+P(A_m) = \frac{\binom{M}{m}\binom{N-M}{n-m}}{\binom{N}{n}}, \quad m=0,1,2,\cdots,r, \quad r=\min\{n,M\}. \tag{1.2.6}
+$$
+
+注意，在此应有 $m \le n$，$m \le M$，所以 $m \le \min\{n,M\}$，否则其概率为 0。
+
+如果取 $N=9$，$M=3$，$n=4$，则有 $m \le \min\{4,3\} = 3$，
+
+$$
+P(A_0) = \frac{\binom{6}{4}}{\binom{9}{4}} = \frac{15}{126} = \frac{5}{42},
+$$
+
+$$
+P(A_1) = \frac{\binom{3}{1}\binom{6}{3}}{\binom{9}{4}} = \frac{60}{126} = \frac{20}{42},
+$$
+
+$$
+P(A_2) = \frac{\binom{3}{2}\binom{6}{2}}{\binom{9}{4}} = \frac{45}{126} = \frac{15}{42},
+$$
+
+$$
+P(A_3) = \frac{\binom{3}{3}\binom{6}{1}}{\binom{9}{4}} = \frac{6}{126} = \frac{2}{42}.
+$$
+
+由于以上四种情况概率之和为 1，这意味着 $m$ 取 0, 1, 2, 3 等四种情况中必有之一发生。',
+  array['一级题目']::text[],
+  'medium',
+  'ai-batch'
+where not exists (
+  select 1
+  from public.problems p
+  where p.subject = 'probability-statistics'
+    and p.question_no = '例 1.2.3'
+);

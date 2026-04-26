@@ -9,7 +9,7 @@ isProject: false
 ## 1. 当前阶段定位
 
 - 本项目仍处于“轻认证演示版”：学生端无登录，老师端采用 `ADMIN_TOKEN + httpOnly Cookie`。
-- 路由采用“角色 -> 栏目 -> 题目”的层级组织，栏目固定为：
+- 路由采用“角色 -> 栏目 -> 章节 -> 分组 -> 题目”的层级组织，栏目固定为：
   - `probability-statistics`（概率论与数理统计）
   - `microeconomics`（微观经济学）
   - `microeconomics-terms`（微观名词解释）
@@ -55,8 +55,9 @@ isProject: false
 
 - `/`：当前实现直接重定向到 `/student`。
 - `/student`：栏目选择页。
-- `/student/[subject]`：栏目页；其中 `probability-statistics` 展示章节列表，其余栏目展示题目列表。
-- `/student/probability-statistics/chapter/[chapterNo]`：概率论与数理统计分章题目列表页。
+- `/student/[subject]`：栏目页；其中 `probability-statistics` 展示章节列表（章节内按“例题/习题”分组入口），其余栏目展示题目列表。
+- `/student/probability-statistics/chapter/[chapterNo]`：概率论与数理统计章节分组页（例题/习题）。
+- `/student/probability-statistics/chapter/[chapterNo]/[section]`：概率论与数理统计分章分组题目列表页（`section = examples | exercises`）。
 - `/problems/[id]?viewer=student`：题目详情 + 评论区（默认学生视角）。
 
 ### 4.2 老师侧
@@ -64,8 +65,9 @@ isProject: false
 - `/teacher/login`：口令登录页；校验 `ADMIN_TOKEN`。
 - 登录成功写入 `teacher_auth` Cookie（8 小时、httpOnly、sameSite=lax）。
 - `/teacher`：栏目选择页（要求已登录）。
-- `/teacher/[subject]`：栏目管理页；其中 `probability-statistics` 展示章节列表，其余栏目展示题目管理列表（要求已登录）。
-- `/teacher/probability-statistics/chapter/[chapterNo]`：概率论与数理统计分章题目管理页（要求已登录）。
+- `/teacher/[subject]`：栏目管理页；其中 `probability-statistics` 展示章节列表（章节内按“例题/习题”分组入口），其余栏目展示题目管理列表（要求已登录）。
+- `/teacher/probability-statistics/chapter/[chapterNo]`：概率论与数理统计章节分组管理页（要求已登录）。
+- `/teacher/probability-statistics/chapter/[chapterNo]/[section]`：概率论与数理统计分章分组题目管理页（要求已登录，`section = examples | exercises`）。
 - `/teacher/problems/new`：发布题目（要求已登录）。
 - `/teacher/problems/[id]/edit`：编辑题目（要求已登录）。
 - `/problems/[id]?viewer=teacher`：老师视角详情页（要求已登录，展示编辑/治理入口）。
@@ -81,9 +83,16 @@ isProject: false
 
 ### 5.1 `problems`
 
-- 核心字段：`subject`、`title`、`stem_md`、`options_json`、`answer_md`、`analysis_md`、`tags`、`difficulty`、`is_hidden`、`created_by_alias`、`author_user_id`、`created_at`
+- 核心字段：`subject`、`question_no`、`chapter_section`、`title`、`stem_md`、`options_json`、`answer_md`、`analysis_md`、`tags`、`difficulty`、`is_hidden`、`created_by_alias`、`author_user_id`、`created_at`
+- 当 `subject = probability-statistics` 时，前端不展示 `title`，卡片标题仅显示 `question_no`，题干由 `stem_md` 呈现；表单隐藏标题字段，Server Action 在 `title` 为空时自动从 `stem_md` 截取填充，确保 DB 非空约束满足。
+- 当 `subject = probability-statistics` 时，`chapter_section` 必填且仅允许 `examples`（例题）或 `exercises`（习题）；章节内分组页面完全依据该字段路由与筛选，不再做标题/标签关键词推断。
 - 当 `subject = microeconomics-terms`（微观名词解释）时，学生端将 `stem_md` / `answer_md` / `analysis_md` 分别呈现为「概念 / 名词解释 / 案例」语义，且后两者置于同一折叠区域内；AI 录入字段映射见 `docs/MICROECONOMICS_TERMS_UPLOAD_GUIDE.md`。
-- 该栏目试点题号：`question_no` 采用 `章号.题号`（如 `1.1`、`12.11`），并由生成列 `chapter_no`、`item_no` 支撑题号数值排序；其余栏目可暂不填写题号。
+- 题号体系（`question_no`）：
+  - 微观名词解释：`章号.题号`（如 `1.1`、`12.11`），两段式。
+  - 概率论与数理统计习题：`章.节.题`（如 `1.2.3`），三段式。
+  - 概率论与数理统计例题：`例 章.节.题`（如 `例 1.2.2`），三段式带"例 "前缀。
+  - 生成列 `chapter_no`、`item_no`、`sub_item_no` 自动从 `question_no` 解析（剥离"例 "前缀），支撑排序与索引。
+  - AI 录入规范见 `docs/MICROECONOMICS_TERMS_UPLOAD_GUIDE.md`（微观名词解释）和 `docs/PROBABILITY_EXAMPLES_UPLOAD_GUIDE.md`（概率论例题）。
 - 关键索引：
   - `idx_problems_visible_created_at`
   - `idx_problems_subject_visible_created_at`

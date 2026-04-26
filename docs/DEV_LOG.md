@@ -10,6 +10,59 @@
 
 ## 2026-04-25
 
+## 2026-04-26
+
+### 含图题目：一体化上传流程与指南
+- **背景**：概率论部分题目（如几何概型）题干或解析包含坐标系、示意图，纯 SQL 录入无法携带图片，需要一套自动化方案处理图形上传与引用。
+- **变更**：
+  1. 新增 `scripts/upload-figures.sh`：自动加载 `.env.local`，扫描 SQL 中 `{{FIG:文件名}}` 占位符，将 `figures/` 目录对应 SVG 上传到 Supabase Storage（`problem-assets/figures/`），替换占位符为 public URL，并备份原始 SQL。
+  2. 新增 `docs/PROBABILITY_FIGURES_GUIDE.md`：面向 AI 的含图题目完整处理指南，包含 SVG 规范（尺寸、填充、标注）、占位符写法、脚本用法。
+  3. `docs/PROBABILITY_EXAMPLES_UPLOAD_GUIDE.md` 新增第 4 节分流说明，含图题目指向新文档。
+- **风险/待办**：Supabase Storage bucket `problem-assets` 需为 public 才能通过 URL 直接访问；`MarkdownMath` 组件 `react-markdown` 默认支持 `![](url)` 渲染 `<img>`，无需额外配置。
+
+### 概率论与数理统计：修复例 1.2.3 的内容与渲染
+- **背景**：迁移 `000021` 存在三类问题：① 解析内容被大幅改写，未忠实教材原文；② `answer_md` / `analysis_md` 分离，但教材解析末尾自带结论，拆分后答案与解析重复；③ SQL 中 `\n\n` 是字面文本而非换行，且单行 `$$...$$` 被 `normalizeMathDelimiters` 转成行内公式，渲染全部挤到一行。
+- **变更**：
+  1. 重写 `000021`：`analysis_md` 逐字对照教材原文（含分步推导 $A_0 \to A_1 \to A_m$、数值示例、结论），使用 PostgreSQL 多行字符串（真实换行）取代 `\n\n`，`$$` 独占行以保持 display math，`answer_md` 置空。
+  2. 重写 `000022`（UPDATE 补丁），对已入库数据执行同样修复。
+- **要点**：后续录题需遵守——① 禁止在 `\text{}` 内嵌套 `$...$`；② SQL 字符串用真实换行；③ `$$` 必须独占行（否则会被前端 normalize 为行内公式）；④ 解析应忠实原文，不得改写。
+
+### 概率论与数理统计：移除 title 冗余展示，卡片标题仅显示题号
+- **背景**：概率论例题卡片同时显示 `questionNo + title` 和 `stemMd`，而 `title` 与 `stemMd` 内容基本相同，造成视觉重复。
+- **变更**：
+  1. 学生/老师 section 列表页卡片标题改为仅显示 `questionNo`（无题号时降级为 `title`），`stemMd` 作为内容区展示。
+  2. `ProblemDetail` 详情页标题对概率论仅显示 `questionNo`。
+  3. `ProblemForm` 对概率论隐藏标题输入框（`hidden` 字段保留旧值）。
+  4. `createProblemAction` / `updateProblemAction` 在 `title` 为空时自动从 `stemMd` 截取填充，确保 DB 非空约束。
+  5. 上传指南 `PROBABILITY_EXAMPLES_UPLOAD_GUIDE.md` 同步更新 `title` 字段说明。
+- **风险/待办**：其他栏目（微观经济学、微观名词解释）不受影响，继续使用 `questionNo + title` 展示。
+
+---
+
+### 概率论与数理统计：题号体系升级（三段式 +“例”前缀）
+- **背景**：概率论习题编号为 `1.1.1`（章.节.题），例题编号为 `例 1.1.1`，数字部分可能与习题重复，靠“例 ”前缀区分；原 `question_no` 约束 `^\d+\.\d+$` 无法容纳。
+- **变更**：
+  1. 新增迁移 `20260425_000019_probability_question_no_format.sql`：放宽 `problems_question_no_format` 约束为 `^\d+\.\d+$` | `^(例 )?\d+\.\d+\.\d+$`；删除旧 `chapter_no`/`item_no` 生成列，以 `regexp_replace` 重建，兼容“例”前缀；新增 `sub_item_no` 生成列（第三段，两段式为 NULL）；重建相关索引。
+  2. `subjects.ts` 中 `parseQuestionNo` 扩展为支持两段/三段（含“例”前缀），返回 `{chapterNo, itemNo, subItemNo?}`。
+  3. `problems.ts` 仓储层 `questionNo` Zod regex 放宽；`SUMMARY_COLUMNS` 追加 `sub_item_no`。
+  4. 学生/老师 section 页排序改为先 `itemNo` 再 `subItemNo`。
+  5. 新增 `docs/PROBABILITY_EXAMPLES_UPLOAD_GUIDE.md`，面向 AI 的概率论例题批量入库指南。
+- **风险/待办**：微观名词解释仍使用两段式题号，互不干扰；概率论习题上传指南待后续补充。
+---
+
+### 概率论与数理统计：章节下拆分“例题/习题”并切换为字段判定
+- **背景**：该栏目需要每章分成“例题、习题”两块，并且分组判定需基于固定字段规则，避免关键词推断造成偏差。
+- **变更**：
+  1. 新增迁移 `20260425_000018_probability_chapter_section.sql`，为 `problems` 增加 `chapter_section` 字段，并约束概率论栏目必须填写 `examples/exercises`。
+  2. `ProblemForm` 新增“题型（概率论与数理统计必填）”下拉，发布/编辑时通过 Server Action 传入仓储层写库。
+  3. `student/[subject]`、`teacher/[subject]` 在概率论章节卡片下直接展示“例题/习题”入口与数量。
+  4. `student/[subject]/chapter/[chapterNo]`、`teacher/[subject]/chapter/[chapterNo]` 调整为章节分组页；新增 `.../[section]` 分组题目列表页。
+  5. 章节分组统计与列表筛选改为仅依据 `chapter_section` 字段，不再使用标题/标签关键词规则。
+  6. `createProblemAction` / `updateProblemAction` 补充分组页 `revalidatePath`，确保发布/编辑后分组列表实时刷新。
+- **风险/待办**：本次迁移对既有概率论数据默认回填为 `exercises`；若历史数据需要区分例题，可后续批量修正 `chapter_section`。
+
+---
+
 ### 概率论与数理统计：栏目改为“先章节后题目”的两级导航
 - **背景**：栏目入口需要先展示章节列表，再进入章节内题目，避免直接平铺全部题目。
 - **变更**：

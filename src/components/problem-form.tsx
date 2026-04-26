@@ -2,6 +2,11 @@ import { SubmitButton } from "@/components/submit-button";
 import { SUBJECTS, SUBJECT_LABELS, type Subject } from "@/lib/domain/subjects";
 import type { ProblemRecord } from "@/lib/domain/types";
 
+const CHAPTER_SECTION_OPTIONS = [
+  { value: "examples", label: "例题" },
+  { value: "exercises", label: "习题
+] as const;
+
 type Props = {
   formAction: (formData: FormData) => Promise<void>;
   mode: "create" | "edit";
@@ -23,6 +28,7 @@ export function ProblemForm({ formAction, mode, initialProblem, initialSubject }
   const isEdit = mode === "edit";
   const subjectValue = initialProblem?.subject ?? initialSubject ?? "probability-statistics";
   const isMicroTermsSubject = subjectValue === "microeconomics-terms";
+  const isProbabilitySubject = subjectValue === "probability-statistics";
 
   return (
     <form action={formAction} className="card form-grid">
@@ -39,10 +45,14 @@ export function ProblemForm({ formAction, mode, initialProblem, initialSubject }
         </label>
       ) : null}
 
-      <label>
-        标题
-        <input name="title" defaultValue={initialProblem?.title ?? ""} required maxLength={120} />
-      </label>
+      {isProbabilitySubject ? (
+        <input type="hidden" name="title" value={initialProblem?.title ?? ""} />
+      ) : (
+        <label>
+          标题
+          <input name="title" defaultValue={initialProblem?.title ?? ""} required maxLength={120} />
+        </label>
+      )}
 
       <label>
         题号（微观名词解释建议必填）
@@ -53,6 +63,22 @@ export function ProblemForm({ formAction, mode, initialProblem, initialSubject }
           pattern="\\d+\\.\\d+"
           required={isMicroTermsSubject}
         />
+      </label>
+
+      <label>
+        题型（概率论与数理统计必填）
+        <select
+          name="chapterSection"
+          defaultValue={initialProblem?.chapterSection ?? (isProbabilitySubject ? "exercises" : "")}
+          required={isProbabilitySubject}
+        >
+          <option value="">请选择</option>
+          {CHAPTER_SECTION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label>

@@ -4,6 +4,7 @@ export type AuthorRole = "teacher" | "student";
 
 export type ProblemDifficulty = "easy" | "medium" | "hard";
 export type ProblemSubject = Subject;
+export type ChapterSection = "examples" | "exercises";
 
 export type ProblemOption = {
   key: string;
@@ -14,6 +15,7 @@ export type ProblemRecord = {
   id: string;
   subject: ProblemSubject;
   questionNo: string | null;
+  chapterSection: ChapterSection | null;
   title: string;
   stemMd: string;
   options: ProblemOption[];
@@ -28,7 +30,16 @@ export type ProblemRecord = {
 
 export type ProblemSummary = Pick<
   ProblemRecord,
-  "id" | "subject" | "questionNo" | "title" | "stemMd" | "tags" | "difficulty" | "createdByAlias" | "createdAt"
+  | "id"
+  | "subject"
+  | "questionNo"
+  | "chapterSection"
+  | "title"
+  | "stemMd"
+  | "tags"
+  | "difficulty"
+  | "createdByAlias"
+  | "createdAt"
 >;
 
 export type ProblemAssetRecord = {
