@@ -4,7 +4,7 @@ import type { ProblemRecord } from "@/lib/domain/types";
 
 const CHAPTER_SECTION_OPTIONS = [
   { value: "examples", label: "例题" },
-  { value: "exercises", label: "习题
+  { value: "exercises", label: "习题" },
 ] as const;
 
 type Props = {
